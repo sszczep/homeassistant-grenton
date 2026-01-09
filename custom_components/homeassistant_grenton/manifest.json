@@ -1,0 +1,13 @@
+{
+  "domain": "grenton",
+  "name": "Grenton",
+  "version": "0.1.0",
+  "codeowners": [
+    "@sszczep"
+  ],
+  "documentation": "https://github.com/sszczep/homeassistant-grenton",
+  "issue_tracker": "https://github.com/sszczep/homeassistant-grenton/issues",
+  "requirements": ["pydantic>=2.12.2"],
+  "dependencies": [],
+  "config_flow": true
+}
