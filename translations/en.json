@@ -1,0 +1,139 @@
+{
+  "title": "Grenton Home Assistant",
+
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configure Grenton Interface",
+        "description": "Enter the IP address, port, and PIN from Grenton Object Manager to connect.",
+        "data": {
+          "ip_address": "IP Address",
+          "port": "Port",
+          "pin": "PIN"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Invalid PIN or authentication failed.",
+      "invalid_data": "Data from the device was missing or malformed.",
+      "cannot_connect": "Unable to connect to the Grenton Object Manager at the given address.",
+      "unknown": "Unknown error occurred."
+    }
+  },
+
+  "options": {
+    "step": {
+      "entity_list": {
+        "title": "Configure Entities",
+        "description": "Select an entity to configure its properties.",
+        "data": {
+          "entity": "Entity"
+        }
+      },
+      "configure_sensor_class": {
+        "title": "Configure {entity_name} - Device Class",
+        "description": "Choose the device class.",
+        "data": {
+          "device_class": "Device Class"
+        }
+      },
+      "configure_sensor_unit": {
+        "title": "Configure {entity_name} - Unit of Measurement",
+        "description": "Select the unit of measurement for selected device class.",
+        "data": {
+          "unit_of_measurement": "Unit of Measurement"
+        }
+      }
+    },
+    "abort": {
+      "no_configurable_entities": "No configurable entities found.",
+      "entity_not_found": "Selected entity not found.",
+      "entity_not_configurable": "This entity cannot be configured."
+    }
+  },
+
+  "device": {
+    "on_off": {
+      "name": "On/Off Switch"
+    },
+    "on_off_double": {
+      "name": "On/Off Double Switch"
+    },
+    "value_v2": {
+      "name": "Value Sensor V2"
+    },
+    "value_double": {
+      "name": "Value Double Sensor"
+    },
+    "dimmer_v2": {
+      "name": "Dimmer V2"
+    }
+  },
+
+  "selector": {
+    "device_classes": {
+      "options": {
+        "absolute_humidity": "Absolute humidity",
+        "apparent_power": "Apparent power",
+        "aqi": "Air quality index",
+        "area": "Area",
+        "atmospheric_pressure": "Atmospheric pressure",
+        "battery": "Battery",
+        "blood_glucose_concentration": "Blood glucose concentration",
+        "carbon_dioxide": "Carbon dioxide",
+        "carbon_monoxide": "Carbon monoxide",
+        "conductivity": "Conductivity",
+        "current": "Current",
+        "data_rate": "Data rate",
+        "data_size": "Data size",
+        "date": "Date",
+        "distance": "Distance",
+        "duration": "Duration",
+        "energy": "Energy",
+        "energy_distance": "Energy per distance",
+        "energy_storage": "Stored energy",
+        "enum": "Sensor",
+        "frequency": "Frequency",
+        "gas": "Gas",
+        "humidity": "Humidity",
+        "illuminance": "Illuminance",
+        "irradiance": "Irradiance",
+        "moisture": "Moisture",
+        "monetary": "Monetary balance",
+        "nitrogen_dioxide": "Nitrogen dioxide",
+        "nitrogen_monoxide": "Nitrogen monoxide",
+        "nitrous_oxide": "Nitrous oxide",
+        "ozone": "Ozone",
+        "ph": "pH",
+        "pm1": "PM1",
+        "pm10": "PM10",
+        "pm25": "PM2.5",
+        "pm4": "PM4",
+        "power": "Power",
+        "power_factor": "Power factor",
+        "precipitation": "Precipitation",
+        "precipitation_intensity": "Precipitation intensity",
+        "pressure": "Pressure",
+        "reactive_energy": "Reactive energy",
+        "reactive_power": "Reactive power",
+        "signal_strength": "Signal strength",
+        "sound_pressure": "Sound pressure",
+        "speed": "Speed",
+        "sulphur_dioxide": "Sulphur dioxide",
+        "temperature": "Temperature",
+        "temperature_delta": "Temperature delta",
+        "timestamp": "Timestamp",
+        "volatile_organic_compounds": "Volatile organic compounds",
+        "volatile_organic_compounds_parts": "Volatile organic compounds parts",
+        "voltage": "Voltage",
+        "volume": "Volume",
+        "volume_flow_rate": "Volume flow rate",
+        "volume_storage": "Stored volume",
+        "water": "Water",
+        "weight": "Weight",
+        "wind_direction": "Wind direction",
+        "wind_speed": "Wind speed"
+      }
+    }
+  }
+}

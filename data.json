@@ -1,0 +1,428 @@
+{
+    "pages": [{
+        "isFullscreenWidget": false,
+        "name": "Strona",
+        "icon": "default",
+        "widgets": [
+            {
+                "components": [{
+                    "unit": "UNKNOWN",
+                    "label": "Nagłówek",
+                    "type": "HEADER",
+                    "rowId": 0
+                }],
+                "id": "880Ctvbg",
+                "type": "HEADER"
+            },
+            {
+                "unit": "UNKNOWN",
+                "valueType": "STRING",
+                "precision": 2,
+                "icon": "value",
+                "label": "VALUE_V2_ATTR",
+                "id": "XtutA3JW",
+                "type": "VALUE_V2",
+                "object": {"value": {
+                    "cluId": "CLU221010502",
+                    "objectName": "CLU221010502",
+                    "index": "0",
+                    "callType": "ATTRIBUTE"
+                }}
+            },
+            {
+                "unit": "UNKNOWN",
+                "valueType": "STRING",
+                "precision": 2,
+                "icon": "value",
+                "label": "VALUE_V2_VAR",
+                "id": "Ak8Kdl62",
+                "type": "VALUE_V2",
+                "object": {"value": {
+                    "cluId": "CLU221010502",
+                    "objectName": "CLU221010502",
+                    "index": "VALUE_V2_VAR",
+                    "callType": "VARIABLE"
+                }}
+            },
+            {
+                "componentLeft": {
+                    "unit": "UNKNOWN",
+                    "valueType": "STRING",
+                    "precision": 2,
+                    "icon": "value_double",
+                    "label": "VALUE_DOUBLE_ATTR",
+                    "object": {"value": {
+                        "cluId": "CLU221010502",
+                        "objectName": "CLU221010502",
+                        "index": "27",
+                        "callType": "ATTRIBUTE"
+                    }}
+                },
+                "id": "EDidLhzh",
+                "type": "VALUE_DOUBLE",
+                "componentRight": {
+                    "unit": "UNKNOWN",
+                    "valueType": "STRING",
+                    "precision": 2,
+                    "icon": "value_double",
+                    "label": "VALUE_DOUBLE_VAR",
+                    "object": {"value": {
+                        "cluId": "CLU221010502",
+                        "objectName": "CLU221010502",
+                        "index": "VALUE_V2_VAR",
+                        "callType": "VARIABLE"
+                    }}
+                }
+            },
+            {
+                "components": [{
+                    "image": "bulb",
+                    "unit": "UNKNOWN",
+                    "label": "ON_OFF_ATTR_SCRIPT",
+                    "state": {
+                        "cluId": "CLU221010502",
+                        "objectName": "CLU221010502",
+                        "index": "18",
+                        "callType": "ATTRIBUTE"
+                    },
+                    "offIndication": "Wyłączone",
+                    "type": "BUTTON_BISTABLE",
+                    "actions": [
+                        {
+                            "cluId": "CLU221010502",
+                            "objectName": "Test",
+                            "event": "ON",
+                            "value": "",
+                            "callType": "SCRIPT"
+                        },
+                        {
+                            "cluId": "CLU221010502",
+                            "objectName": "Test",
+                            "event": "OFF",
+                            "value": "",
+                            "callType": "SCRIPT"
+                        }
+                    ],
+                    "onIndication": "Włączone",
+                    "rowId": 0
+                }],
+                "id": "b0F2HfCf",
+                "type": "ON_OFF"
+            },
+            {
+                "components": [{
+                    "image": "bulb",
+                    "unit": "UNKNOWN",
+                    "label": "ON_OFF_ATTR_SCR_PARAM",
+                    "state": {
+                        "cluId": "CLU221010502",
+                        "objectName": "CLU221010502",
+                        "index": "18",
+                        "callType": "ATTRIBUTE"
+                    },
+                    "offIndication": "Wyłączone",
+                    "type": "BUTTON_BISTABLE",
+                    "actions": [
+                        {
+                            "cluId": "CLU221010502",
+                            "objectName": "Test_Arg",
+                            "event": "ON",
+                            "value": "\"abc\",nil,CLU221010502:get(17)",
+                            "callType": "SCRIPT"
+                        },
+                        {
+                            "cluId": "CLU221010502",
+                            "objectName": "Test_Arg",
+                            "event": "OFF",
+                            "value": "\"def\",nil,getVar(\"VALUE_V2_VAR\")",
+                            "callType": "SCRIPT"
+                        }
+                    ],
+                    "onIndication": "Włączone",
+                    "rowId": 0
+                }],
+                "id": "5R8P088S",
+                "type": "ON_OFF"
+            },
+            {
+                "components": [{
+                    "image": "bulb",
+                    "unit": "UNKNOWN",
+                    "label": "ON_OFF_VAR",
+                    "state": {
+                        "cluId": "CLU221010502",
+                        "objectName": "CLU221010502",
+                        "index": "ON_OFF_VAR",
+                        "callType": "VARIABLE"
+                    },
+                    "offIndication": "Wyłączone",
+                    "type": "BUTTON_BISTABLE",
+                    "actions": [
+                        {
+                            "cluId": "CLU221010502",
+                            "objectName": "CLU221010502",
+                            "index": "ON_OFF_VAR",
+                            "event": "ON",
+                            "value": "true",
+                            "callType": "VARIABLE"
+                        },
+                        {
+                            "cluId": "CLU221010502",
+                            "objectName": "CLU221010502",
+                            "index": "ON_OFF_VAR",
+                            "event": "OFF",
+                            "value": "false",
+                            "callType": "VARIABLE"
+                        }
+                    ],
+                    "onIndication": "Włączone",
+                    "rowId": 0
+                }],
+                "id": "HHw16C2K",
+                "type": "ON_OFF"
+            },
+            {
+                "components": [
+                    {
+                        "image": "bulb",
+                        "unit": "UNKNOWN",
+                        "label": "ON_OFF_DOUBLE_VAR1",
+                        "state": {
+                            "cluId": "CLU221010502",
+                            "objectName": "CLU221010502",
+                            "index": "ON_OFF_VAR",
+                            "callType": "VARIABLE"
+                        },
+                        "offIndication": "Wyłączone",
+                        "type": "BUTTON_BISTABLE_V2",
+                        "actions": [
+                            {
+                                "cluId": "CLU221010502",
+                                "objectName": "CLU221010502",
+                                "index": "ON_OFF_VAR",
+                                "event": "ON",
+                                "value": "true",
+                                "callType": "VARIABLE"
+                            },
+                            {
+                                "cluId": "CLU221010502",
+                                "objectName": "CLU221010502",
+                                "index": "ON_OFF_VAR",
+                                "event": "OFF",
+                                "value": "false",
+                                "callType": "VARIABLE"
+                            }
+                        ],
+                        "onIndication": "Włączone",
+                        "rowId": 0
+                    },
+                    {
+                        "image": "bulb",
+                        "unit": "UNKNOWN",
+                        "label": "ON_OFF_DOUBLE_METHOD",
+                        "state": {
+                            "cluId": "CLU221010502",
+                            "objectName": "CLU221010502",
+                            "index": "ON_OFF_VAR",
+                            "callType": "VARIABLE"
+                        },
+                        "offIndication": "Wyłączone",
+                        "type": "BUTTON_BISTABLE_V2",
+                        "actions": [
+                            {
+                                "cluId": "CLU221010502",
+                                "objectName": "CLU221010502",
+                                "index": "1",
+                                "event": "ON",
+                                "value": "",
+                                "callType": "METHOD"
+                            },
+                            {
+                                "cluId": "CLU221010502",
+                                "objectName": "CLU221010502",
+                                "index": "31",
+                                "event": "OFF",
+                                "value": "1",
+                                "callType": "ATTRIBUTE"
+                            }
+                        ],
+                        "onIndication": "Włączone",
+                        "rowId": 1
+                    }
+                ],
+                "id": "ndGUQUeF",
+                "type": "ON_OFF_DOUBLE"
+            },
+            {
+                "min": 0,
+                "max": 1,
+                "precision": 2,
+                "icon": "dimmer",
+                "label": "DIMMER",
+                "id": "w5E3k2KK",
+                "type": "DIMMER_V2",
+                "object": {
+                    "onAction": {
+                        "cluId": "CLU221010502",
+                        "objectName": "CLU221010502",
+                        "index": "DIMMER",
+                        "event": "CLICK",
+                        "value": "1",
+                        "callType": "VARIABLE"
+                    },
+                    "offAction": {
+                        "cluId": "CLU221010502",
+                        "objectName": "CLU221010502",
+                        "index": "DIMMER",
+                        "event": "CLICK",
+                        "value": "0",
+                        "callType": "VARIABLE"
+                    },
+                    "setValueAction": {
+                        "cluId": "CLU221010502",
+                        "objectName": "CLU221010502",
+                        "index": "DIMMER",
+                        "event": "CLICK",
+                        "value": "$value$",
+                        "callType": "VARIABLE"
+                    },
+                    "value": {
+                        "cluId": "CLU221010502",
+                        "objectName": "CLU221010502",
+                        "index": "DIMMER",
+                        "callType": "VARIABLE"
+                    }
+                }
+            },
+            {
+                "components": [
+                    {
+                        "image": "rgb",
+                        "unit": "UNKNOWN",
+                        "label": "LED",
+                        "state": {
+                            "cluId": "CLU221010502",
+                            "objectName": "CLU221010502",
+                            "index": "LED",
+                            "callType": "VARIABLE"
+                        },
+                        "offIndication": "Wyłączone",
+                        "type": "BUTTON_BISTABLE",
+                        "actions": [
+                            {
+                                "cluId": "CLU221010502",
+                                "objectName": "CLU221010502",
+                                "index": "LED",
+                                "event": "ON",
+                                "value": "true",
+                                "callType": "VARIABLE"
+                            },
+                            {
+                                "cluId": "CLU221010502",
+                                "objectName": "CLU221010502",
+                                "index": "LED",
+                                "event": "OFF",
+                                "value": "false",
+                                "callType": "VARIABLE"
+                            }
+                        ],
+                        "onIndication": "Włączone",
+                        "rowId": 0
+                    },
+                    {
+                        "unit": "DEGREE",
+                        "range": {
+                            "min": 0,
+                            "max": 360
+                        },
+                        "label": "Barwa",
+                        "state": {
+                            "cluId": "CLU221010502",
+                            "objectName": "CLU221010502",
+                            "index": "H",
+                            "callType": "VARIABLE"
+                        },
+                        "type": "SLIDER_HUE",
+                        "actions": [{
+                            "cluId": "CLU221010502",
+                            "objectName": "CLU221010502",
+                            "index": "H",
+                            "event": "CLICK",
+                            "value": "$value$",
+                            "callType": "VARIABLE"
+                        }],
+                        "rowId": 1
+                    },
+                    {
+                        "unit": "PERCENT",
+                        "range": {
+                            "min": 0,
+                            "max": 1
+                        },
+                        "label": "Nasycenie",
+                        "state": {
+                            "cluId": "CLU221010502",
+                            "objectName": "CLU221010502",
+                            "index": "S",
+                            "callType": "VARIABLE"
+                        },
+                        "type": "SLIDER_SATURATION",
+                        "actions": [{
+                            "cluId": "CLU221010502",
+                            "objectName": "CLU221010502",
+                            "index": "S",
+                            "event": "CLICK",
+                            "value": "$value$",
+                            "callType": "VARIABLE"
+                        }],
+                        "rowId": 2
+                    },
+                    {
+                        "unit": "PERCENT",
+                        "range": {
+                            "min": 0,
+                            "max": 1
+                        },
+                        "label": "Jasność",
+                        "state": {
+                            "cluId": "CLU221010502",
+                            "objectName": "CLU221010502",
+                            "index": "V",
+                            "callType": "VARIABLE"
+                        },
+                        "type": "SLIDER_BRIGHTNESS",
+                        "actions": [{
+                            "cluId": "CLU221010502",
+                            "objectName": "CLU221010502",
+                            "index": "V",
+                            "event": "CLICK",
+                            "value": "$value$",
+                            "callType": "VARIABLE"
+                        }],
+                        "rowId": 3
+                    }
+                ],
+                "id": "O0prOBv4",
+                "type": "LED"
+            }
+        ]
+    }],
+    "encryption": {
+        "iv": "726mRPYNh0whfgMOkypLCQ==",
+        "key": "wyEKxCUrKZy57ShpPBMzyQ=="
+    },
+    "pushNotifications": [],
+    "name": "HA",
+    "icon": "home_1",
+    "clus": [{
+        "serialNumber": "221010502",
+        "port": 1234,
+        "ip": "192.168.169.120",
+        "name": "CLU221010502",
+        "id": "CLU221010502",
+        "connectionType": "CLOUD"
+    }],
+    "theme": "BLUE",
+    "id": "43f35774-e2a0-4822-bf24-67ce70eecce5",
+    "version": 193900
+}
