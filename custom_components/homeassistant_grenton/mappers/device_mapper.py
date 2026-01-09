@@ -8,6 +8,7 @@ from ..dto.widgets.value_double import GrentonWidgetValueDoubleDto
 from ..dto.widgets.on_off import GrentonWidgetOnOffDto
 from ..dto.widgets.on_off_double import GrentonWidgetOnOffDoubleDto
 from ..dto.widgets.dimmer_v2 import GrentonWidgetDimmerV2Dto
+from ..dto.widgets.led import GrentonWidgetLedDto
 from ..dto.mobile_interface import GrentonMobileInterfaceDto
 
 from .device_value_v2 import DeviceValueV2Mapper
@@ -15,6 +16,7 @@ from .device_value_double import DeviceValueDoubleMapper
 from .device_on_off import DeviceOnOffMapper
 from .device_on_off_double import DeviceOnOffDoubleMapper
 from .device_dimmer_v2 import DeviceDimmerV2Mapper
+from .device_led import DeviceLedMapper
 
 
 class DeviceMapper:
@@ -31,8 +33,10 @@ class DeviceMapper:
             return DeviceOnOffMapper.to_domain(dto, coordinator)
         if isinstance(dto, GrentonWidgetOnOffDoubleDto):
             return DeviceOnOffDoubleMapper.to_domain(dto, coordinator)
-        if isinstance(dto, GrentonWidgetDimmerV2Dto):  # type: ignore
+        if isinstance(dto, GrentonWidgetDimmerV2Dto):  
             return DeviceDimmerV2Mapper.to_domain(dto, coordinator)
+        if isinstance(dto, GrentonWidgetLedDto): # type: ignore
+            return DeviceLedMapper.to_domain(dto, coordinator)
         
         raise ValueError(f"Unknown widget type: {type(dto)}")
 

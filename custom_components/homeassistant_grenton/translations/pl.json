@@ -67,6 +67,9 @@
     },
     "dimmer_v2": {
       "name": "Ściemniacz V2"
+    },
+    "led": {
+      "name": "Oświetlenie LED"
     }
   },
   

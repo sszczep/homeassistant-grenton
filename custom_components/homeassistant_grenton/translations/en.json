@@ -67,6 +67,9 @@
     },
     "dimmer_v2": {
       "name": "Dimmer V2"
+    },
+    "led": {
+      "name": "LED Lighting"
     }
   },
 
