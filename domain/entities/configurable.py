@@ -105,19 +105,15 @@ class ConfigurableEntity(Generic[C]):
         self._configured = False
         return defaults
 
-    def _save_config(self, config: Dict[str, Any]) -> None:
+    def _merge_config_into_options(self, config: Dict[str, Any]) -> Dict[str, Any]:
         options = dict(cast(Dict[str, Any], self.coordinator.config_entry.options)) if self.coordinator.config_entry else {}
         category = dict(options.get(self.config_category, {})) if isinstance(options.get(self.config_category, {}), dict) else {}
         category[self._config_key()] = config
         options[self.config_category] = category
+        return options
 
-        self.hass.config_entries.async_update_entry(
-            self.coordinator.config_entry,
-            options=options,
-        )
-
-    def apply_configuration(self, user_input: Dict[str, Any]) -> None:
-        """Persist configuration and invoke subclass hook."""
+    async def apply_configuration(self, user_input: Dict[str, Any]) -> Dict[str, Any]:
+        """Persist configuration and return merged options for the flow."""
         self._config = user_input
         self._configured = True
-        self._save_config(user_input)
+        return self._merge_config_into_options(user_input)

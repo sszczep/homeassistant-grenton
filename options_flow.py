@@ -101,20 +101,20 @@ class GrentonOptionsFlow(OptionsFlow):
 
         # Check if we're done with all steps
         if self.current_step_index >= len(steps):
-            entity.apply_configuration(self.entity_config)
+            options = await entity.apply_configuration(self.entity_config)
             self.entity_config = None
             self.current_step_index = 0
-            return self.async_create_entry(title="", data={})
+            return self.async_create_entry(title="", data=options)
         
         # Build schema for current step
         step_def = steps[self.current_step_index]
         result = step_def.builder(current_config, self.entity_config)
         # If the schema signals completion, apply and finish
         if getattr(result, "complete", False):
-            entity.apply_configuration(self.entity_config)
+            options = await entity.apply_configuration(self.entity_config)
             self.entity_config = None
             self.current_step_index = 0
-            return self.async_create_entry(title="", data={})
+            return self.async_create_entry(title="", data=options)
         # Prefer schema-provided step_id override, else the definition's step_id
         step_id = result.step_id or step_def.step_id
         
