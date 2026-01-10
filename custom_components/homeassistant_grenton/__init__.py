@@ -14,7 +14,7 @@ from .domain.clu import GrentonClu
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS: list[Platform] = [Platform.SWITCH, Platform.SENSOR, Platform.LIGHT, Platform.BINARY_SENSOR, Platform.BUTTON, Platform.NUMBER, Platform.COVER]
+PLATFORMS: list[Platform] = [Platform.SWITCH, Platform.SENSOR, Platform.LIGHT, Platform.BINARY_SENSOR, Platform.BUTTON, Platform.NUMBER, Platform.COVER, Platform.CAMERA]
 
 async def async_setup_entry(hass: HomeAssistant, config_entry: GrentonConfigEntry) -> bool:
     _LOGGER.debug("Initializing Home Assistant Grenton integration")

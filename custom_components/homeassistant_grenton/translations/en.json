@@ -116,6 +116,9 @@
     },
     "roller_shutter_v3": {
       "name": "Roller Shutter V3"
+    },
+    "camera": {
+      "name": "Camera"
     }
   },
 
