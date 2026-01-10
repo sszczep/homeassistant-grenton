@@ -107,6 +107,9 @@
     },
     "contact_sensor_double": {
       "name": "Podwójny czujnik kontaktronowy"
+    },
+    "multisensor": {
+      "name": "Multisensor"
     }
   },
   

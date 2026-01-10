@@ -11,6 +11,7 @@ from .led import GrentonWidgetLedDto
 from .contact_sensor import GrentonWidgetContactSensorDto
 from .contact_sensor_double import GrentonWidgetContactSensorDoubleDto
 from .slider import GrentonWidgetSliderDto
+from .multisensor import GrentonWidgetMultisensorDto
 
 # Discriminated union using the 'type' field for secure deserialization
 GrentonWidgetUnionDto = Annotated[
@@ -24,6 +25,7 @@ GrentonWidgetUnionDto = Annotated[
         GrentonWidgetContactSensorDto,
         GrentonWidgetContactSensorDoubleDto,
         GrentonWidgetSliderDto,
+        GrentonWidgetMultisensorDto,
     ],
     Field(discriminator="type"),
 ]

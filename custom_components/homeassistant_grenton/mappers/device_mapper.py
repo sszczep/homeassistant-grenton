@@ -12,6 +12,7 @@ from ..dto.widgets.led import GrentonWidgetLedDto
 from ..dto.widgets.contact_sensor import GrentonWidgetContactSensorDto
 from ..dto.widgets.contact_sensor_double import GrentonWidgetContactSensorDoubleDto
 from ..dto.widgets.slider import GrentonWidgetSliderDto
+from ..dto.widgets.multisensor import GrentonWidgetMultisensorDto
 from ..dto.mobile_interface import GrentonMobileInterfaceDto
 
 from .device_value_v2 import DeviceValueV2Mapper
@@ -23,6 +24,7 @@ from .device_led import DeviceLedMapper
 from .device_contact_sensor import DeviceContactSensorMapper
 from .device_contact_sensor_double import DeviceContactSensorDoubleMapper
 from .device_slider import DeviceSliderMapper
+from .device_multisensor import DeviceMultisensorMapper
 
 
 class DeviceMapper:
@@ -47,8 +49,10 @@ class DeviceMapper:
             return DeviceContactSensorMapper.to_domain(dto, coordinator)
         if isinstance(dto, GrentonWidgetContactSensorDoubleDto): 
             return DeviceContactSensorDoubleMapper.to_domain(dto, coordinator)
-        if isinstance(dto, GrentonWidgetSliderDto): # type: ignore
+        if isinstance(dto, GrentonWidgetSliderDto): 
             return DeviceSliderMapper.to_domain(dto, coordinator)
+        if isinstance(dto, GrentonWidgetMultisensorDto): # type: ignore
+            return DeviceMultisensorMapper.to_domain(dto, coordinator)
         
         raise ValueError(f"Unknown widget type: {type(dto)}")
 
