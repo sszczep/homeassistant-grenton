@@ -44,6 +44,27 @@
           "unit_of_measurement": "Jednostka miary"
         }
       },
+      "configure_slider_mode": {
+        "title": "Konfiguruj {entity_name} - Tryb wyświetlania",
+        "description": "Wybierz tryb wyświetlania dla suwaka.",
+        "data": {
+          "mode": "Tryb"
+        }
+      },
+      "configure_slider_class": {
+        "title": "Konfiguruj {entity_name} - Klasa urządzenia",
+        "description": "Wybierz klasę urządzenia.",
+        "data": {
+          "device_class": "Klasa urządzenia"
+        }
+      },
+      "configure_slider_unit": {
+        "title": "Konfiguruj {entity_name} - Jednostka miary",
+        "description": "Wybierz jednostkę miary dla wybranej klasy urządzenia.",
+        "data": {
+          "unit_of_measurement": "Jednostka miary"
+        }
+      },
       "configure_binary_sensor_class": {
         "title": "Konfiguruj {entity_name} - Klasa urządzenia",
         "description": "Wybierz klasę urządzenia.",
@@ -78,6 +99,9 @@
     "led": {
       "name": "Oświetlenie LED"
     },
+    "slider": {
+      "name": "Suwak"
+    },
     "contact_sensor": {
       "name": "Czujnik kontaktronowy"
     },
@@ -87,6 +111,68 @@
   },
   
   "selector": {
+    "slider_modes": {
+      "options": {
+        "auto": "Automatycznie",
+        "slider": "Suwak",
+        "box": "Pole"
+      }
+    },
+    "slider_device_classes": {
+      "options": {
+        "apparent_power": "Moc pozorna",
+        "aqi": "Indeks jakości powietrza",
+        "area": "Pole",
+        "atmospheric_pressure": "Ciśnienie atmosferyczne",
+        "battery": "Bateria",
+        "blood_glucose_concentration": "Stężenie glukozy we krwi",
+        "carbon_monoxide": "Tlenek węgla",
+        "carbon_dioxide": "Dwutlenek węgla",
+        "conductivity": "Przewodność elektryczna",
+        "current": "Natężenie prądu",
+        "data_rate": "Prędkość transmisji danych",
+        "data_size": "Wielkość danych",
+        "distance": "Odległość",
+        "duration": "Czas trwania",
+        "energy": "Energia",
+        "energy_storage": "Energia zmagazynowana",
+        "frequency": "Częstotliwość",
+        "gas": "Gaz",
+        "humidity": "Wilgotność",
+        "illuminance": "Natężenie oświetlenia",
+        "irradiance": "Natężenie promieniowania",
+        "moisture": "Wilgoć",
+        "monetary": "Saldo",
+        "nitrogen_dioxide": "Dwutlenek azotu",
+        "nitrogen_monoxide": "Tlenek azotu",
+        "nitrous_oxide": "Podtlenek azotu",
+        "ozone": "Ozon",
+        "ph": "pH",
+        "pm1": "PM1",
+        "pm10": "PM10",
+        "pm25": "PM2.5",
+        "power_factor": "Współczynnik mocy",
+        "power": "Moc",
+        "precipitation": "Opad atmosferyczny",
+        "precipitation_intensity": "Intensywność opadu atmosferycznego",
+        "pressure": "Ciśnienie",
+        "reactive_power": "Moc reaktywna",
+        "signal_strength": "Siła sygnału",
+        "sound_pressure": "Ciśnienie akustyczne",
+        "speed": "Prędkość",
+        "sulphur_dioxide": "Dwutlenek siarki",
+        "temperature": "Temperatura",
+        "volatile_organic_compounds": "Lotne związki organiczne",
+        "volatile_organic_compounds_parts": "Lotne związki organiczne",
+        "voltage": "Napięcie",
+        "volume": "Objętość",
+        "volume_storage": "Zmagazynowana objętość",
+        "volume_flow_rate": "Przepływ objętości",
+        "water": "Woda",
+        "weight": "Waga",
+        "wind_speed": "Prędkość wiatru"
+      }
+    },
     "binary_sensor_device_classes": {
       "options": {
         "battery": "Bateria",

@@ -10,6 +10,7 @@ from .dimmer_v2 import GrentonWidgetDimmerV2Dto
 from .led import GrentonWidgetLedDto
 from .contact_sensor import GrentonWidgetContactSensorDto
 from .contact_sensor_double import GrentonWidgetContactSensorDoubleDto
+from .slider import GrentonWidgetSliderDto
 
 # Discriminated union using the 'type' field for secure deserialization
 GrentonWidgetUnionDto = Annotated[
@@ -22,6 +23,7 @@ GrentonWidgetUnionDto = Annotated[
         GrentonWidgetLedDto,
         GrentonWidgetContactSensorDto,
         GrentonWidgetContactSensorDoubleDto,
+        GrentonWidgetSliderDto,
     ],
     Field(discriminator="type"),
 ]
