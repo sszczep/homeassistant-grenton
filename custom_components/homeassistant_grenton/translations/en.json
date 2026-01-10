@@ -110,6 +110,26 @@
     },
     "multisensor": {
       "name": "Multisensor"
+    },
+    "roller_shutter": {
+      "name": "Roller Shutter"
+    },
+    "roller_shutter_v3": {
+      "name": "Roller Shutter V3"
+    }
+  },
+
+  "entity": {
+    "sensor": {
+      "roller_shutter_state": {
+        "state": {
+          "stopped": "stopped",
+          "opening": "opening",
+          "closing": "closing",
+          "locked": "locked",
+          "unknown": "unknown"
+        }
+      }
     }
   },
 

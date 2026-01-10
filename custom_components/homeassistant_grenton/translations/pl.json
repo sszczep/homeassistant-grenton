@@ -110,9 +110,29 @@
     },
     "multisensor": {
       "name": "Multisensor"
+    },
+    "roller_shutter": {
+      "name": "Rolety"
+    },
+    "roller_shutter_v3": {
+      "name": "Rolety V3"
     }
   },
   
+  "entity": {
+    "sensor": {
+      "roller_shutter_state": {
+        "state": {
+          "stopped": "zatrzymane",
+          "opening": "otwieranie",
+          "closing": "zamykanie",
+          "locked": "zablokowane",
+          "unknown": "nieznany"
+        }
+      }
+    }
+  },
+
   "selector": {
     "slider_modes": {
       "options": {
