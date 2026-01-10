@@ -6,7 +6,7 @@ import voluptuous as vol
 from homeassistant.components.sensor import SensorEntity, SensorDeviceClass
 from homeassistant.components.sensor.const import DEVICE_CLASS_UNITS
 from homeassistant.helpers.device_registry import DeviceInfo
-from homeassistant.const import (CONF_FRIENDLY_NAME, CONF_ICON, CONF_UNIT_OF_MEASUREMENT)
+from homeassistant.const import CONF_UNIT_OF_MEASUREMENT
 from homeassistant.helpers import selector
 
 from .base import BaseGrentonEntity
@@ -39,7 +39,7 @@ class GrentonEntityValueConfigurationSchema(BaseGrentonEntityConfigurationSchema
                         selector.SelectSelectorConfig(
                             options=device_class_options,
                             mode=selector.SelectSelectorMode.DROPDOWN,
-                            translation_key="device_classes",
+                            translation_key="sensor_device_classes",
                             sort=True,
                         )
                     ),
@@ -120,15 +120,6 @@ class GrentonEntityValue( # pyright: ignore[reportIncompatibleVariableOverride]
     @property
     def native_value(self): # pyright: ignore[reportIncompatibleVariableOverride]
         return self.coordinator.get_value_for_component(self.state_object)
-
-    @property
-    def name(self) -> str: # pyright: ignore[reportIncompatibleVariableOverride]
-        friendly_name = self._config.get(CONF_FRIENDLY_NAME)
-        return friendly_name or self.label
-    
-    @property
-    def icon(self): # pyright: ignore[reportIncompatibleVariableOverride]
-        return self._config.get(CONF_ICON)
 
     @property
     def device_class(self) -> SensorDeviceClass | None:  # pyright: ignore[reportIncompatibleVariableOverride]

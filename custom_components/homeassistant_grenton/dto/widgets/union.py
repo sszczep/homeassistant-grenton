@@ -8,6 +8,8 @@ from .on_off import GrentonWidgetOnOffDto
 from .on_off_double import GrentonWidgetOnOffDoubleDto
 from .dimmer_v2 import GrentonWidgetDimmerV2Dto
 from .led import GrentonWidgetLedDto
+from .contact_sensor import GrentonWidgetContactSensorDto
+from .contact_sensor_double import GrentonWidgetContactSensorDoubleDto
 
 # Discriminated union using the 'type' field for secure deserialization
 GrentonWidgetUnionDto = Annotated[
@@ -18,6 +20,8 @@ GrentonWidgetUnionDto = Annotated[
         GrentonWidgetOnOffDoubleDto,
         GrentonWidgetDimmerV2Dto,
         GrentonWidgetLedDto,
+        GrentonWidgetContactSensorDto,
+        GrentonWidgetContactSensorDoubleDto,
     ],
     Field(discriminator="type"),
 ]

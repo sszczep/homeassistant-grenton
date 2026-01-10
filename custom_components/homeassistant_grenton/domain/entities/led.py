@@ -60,7 +60,6 @@ class GrentonEntityLed(BaseGrentonEntity, LightEntity): # pyright: ignore[report
         coordinator.register_component_state(saturation_state_object)
         coordinator.register_component_state(brightness_state_object)
 
-
     @property
     def is_on(self) -> bool | None: # pyright: ignore[reportIncompatibleVariableOverride]
         """Return whether the light is on."""

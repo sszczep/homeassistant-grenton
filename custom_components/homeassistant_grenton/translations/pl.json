@@ -43,6 +43,13 @@
         "data": {
           "unit_of_measurement": "Jednostka miary"
         }
+      },
+      "configure_binary_sensor_class": {
+        "title": "Konfiguruj {entity_name} - Klasa urządzenia",
+        "description": "Wybierz klasę urządzenia.",
+        "data": {
+          "device_class": "Klasa urządzenia"
+        }
       }
     },
     "abort": {
@@ -70,11 +77,49 @@
     },
     "led": {
       "name": "Oświetlenie LED"
+    },
+    "contact_sensor": {
+      "name": "Czujnik kontaktronowy"
+    },
+    "contact_sensor_double": {
+      "name": "Podwójny czujnik kontaktronowy"
     }
   },
   
   "selector": {
-    "device_classes": {
+    "binary_sensor_device_classes": {
+      "options": {
+        "battery": "Bateria",
+        "battery_charging": "Ładowanie baterii",
+        "carbon_monoxide": "Tlenek węgla",
+        "cold": "Zimno",
+        "connectivity": "Łączność",
+        "door": "Drzwi",
+        "garage_door": "Brama garażowa",
+        "gas": "Gaz",
+        "heat": "Ciepło",
+        "light": "Światło",
+        "lock": "Zamek",
+        "moisture": "Wilgoć",
+        "motion": "Ruch",
+        "moving": "Poruszający się",
+        "occupancy": "Zajętość",
+        "opening": "Otwierający się",
+        "plug": "Wtyczka",
+        "power": "Zasilanie",
+        "presence": "Obecność",
+        "problem": "Problem",
+        "running": "Działający",
+        "safety": "Bezpieczeństwo",
+        "smoke": "Dym",
+        "sound": "Dźwięk",
+        "tamper": "Sabotaż",
+        "update": "Aktualizacja",
+        "vibration": "Wibracje",
+        "window": "Okno"
+      }
+    },
+    "sensor_device_classes": {
       "options": {
         "absolute_humidity": "Wilgotność bezwzględna",
         "apparent_power": "Moc pozorna",
