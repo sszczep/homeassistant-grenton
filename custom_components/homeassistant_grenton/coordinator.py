@@ -14,6 +14,7 @@ from .domain.state_object import GrentonStateObject
 from .domain.action import GrentonAction
 from .domain.api.clu import GrentonCluApi
 from .state import GrentonState, GrentonCluState, GrentonCluStateVariableKey, GrentonCluStateAttributeKey, GrentonValue
+from .domain.api.clu_messages import GrentonCluApiActionRequest
 
 from .const import DOMAIN
 
@@ -134,7 +135,7 @@ class GrentonCoordinator(DataUpdateCoordinator):
         try:
             success = await api.execute_action(action)
             if not success:
-                _LOGGER.warning("[%s] Action execution failed", action.clu_id)
+                _LOGGER.warning("[%s] Action execution failed for payload: %s", action.clu_id, GrentonCluApiActionRequest.from_action(action).payload)
         except Exception as e:
             _LOGGER.error("[%s] Error executing action: %s", action.clu_id, e)
     
