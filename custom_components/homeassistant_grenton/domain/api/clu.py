@@ -138,6 +138,9 @@ class GrentonCluApiProtocol(asyncio.DatagramProtocol):
         
         try:
             plaintext = decrypted.decode().strip()
+            _LOGGER.debug("Received plaintext message: %s", plaintext)
+            
+
         except Exception:
             _LOGGER.warning("[%s] Failed to decode decrypted message: %s", 
                           self.api.clu.name, decrypted.hex())
@@ -145,10 +148,11 @@ class GrentonCluApiProtocol(asyncio.DatagramProtocol):
         
         # Check if it's a valid response
         if not GrentonCluApiMessageParser.is_valid_response(plaintext):
-            _LOGGER.debug("[%s] Received unsupported message: %s", 
-                        self.api.clu.name, plaintext)
+            _LOGGER.debug("[%s] Received unsupported message: %s", self.api.clu.name, plaintext)
             return
         
+         
+                                
         self._process_response(plaintext)
     
     def _process_response(self, wire_message: str) -> None:
