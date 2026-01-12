@@ -7,6 +7,14 @@ from .value_double import GrentonWidgetValueDoubleDto
 from .on_off import GrentonWidgetOnOffDto
 from .on_off_double import GrentonWidgetOnOffDoubleDto
 from .dimmer_v2 import GrentonWidgetDimmerV2Dto
+from .led import GrentonWidgetLedDto
+from .contact_sensor import GrentonWidgetContactSensorDto
+from .contact_sensor_double import GrentonWidgetContactSensorDoubleDto
+from .slider import GrentonWidgetSliderDto
+from .multisensor import GrentonWidgetMultisensorDto
+from .roller_shutter import GrentonWidgetRollerShutterDto
+from .roller_shutter_v3 import GrentonWidgetRollerShutterV3Dto
+from .camera import GrentonWidgetCameraDto
 
 # Discriminated union using the 'type' field for secure deserialization
 GrentonWidgetUnionDto = Annotated[
@@ -16,6 +24,14 @@ GrentonWidgetUnionDto = Annotated[
         GrentonWidgetOnOffDto,
         GrentonWidgetOnOffDoubleDto,
         GrentonWidgetDimmerV2Dto,
+        GrentonWidgetLedDto,
+        GrentonWidgetContactSensorDto,
+        GrentonWidgetContactSensorDoubleDto,
+        GrentonWidgetSliderDto,
+        GrentonWidgetMultisensorDto,
+        GrentonWidgetRollerShutterDto,
+        GrentonWidgetRollerShutterV3Dto,
+        GrentonWidgetCameraDto,
     ],
     Field(discriminator="type"),
 ]
