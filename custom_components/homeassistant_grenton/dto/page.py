@@ -23,7 +23,7 @@ class GrentonPageDto(BaseModel):
             try:
                 widget: GrentonWidgetUnionDto = widget_adapter.validate_python(item)
                 result.append(widget)
-            except ValidationError:
-                _LOGGER.debug("Skipping unsupported widget: %s", item.get("type"))
+            except ValidationError as error:
+                _LOGGER.debug("Skipping widget %s, error: %s", item.get("type"), error)
 
         return result
