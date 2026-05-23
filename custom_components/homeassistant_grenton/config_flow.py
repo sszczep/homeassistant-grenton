@@ -68,10 +68,10 @@ class GrentonConfigFlow(ConfigFlow, domain=DOMAIN):
                 errors["base"] = "unknown"
             else:
                 interface_id = str(data.get("id"))
-                
+
                 await self.async_set_unique_id(interface_id)
                 self._abort_if_unique_id_configured()
-            
+
                 return self.async_create_entry(
                     title=interface_id,
                     data={
@@ -79,10 +79,50 @@ class GrentonConfigFlow(ConfigFlow, domain=DOMAIN):
                         "interface": data
                     }
                 )
-            
+
         return self.async_show_form(
             step_id="user",
             data_schema=STEP_USER_DATA_SCHEMA,
+            errors=errors,
+        )
+
+    async def async_step_reconfigure(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """Re-fetch the mobile interface for the existing config entry."""
+        errors: dict[str, str] = {}
+        entry = self._get_reconfigure_entry()
+
+        if user_input:
+            try:
+                data = await self._validate_and_fetch(user_input)
+            except InvalidAuth:
+                errors["base"] = "invalid_auth"
+            except InvalidData:
+                errors["base"] = "invalid_data"
+            except CannotConnect:
+                errors["base"] = "cannot_connect"
+            except Exception as e:
+                _LOGGER.exception("Unexpected exception: %s", e)
+                errors["base"] = "unknown"
+            else:
+                interface_id = str(data.get("id"))
+
+                await self.async_set_unique_id(interface_id)
+                self._abort_if_unique_id_mismatch(reason="wrong_interface")
+
+                return self.async_update_reload_and_abort(
+                    entry,
+                    data={**user_input, "interface": data},
+                )
+
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=self.add_suggested_values_to_schema(
+                STEP_USER_DATA_SCHEMA,
+                {
+                    CONF_IP_ADDRESS: entry.data.get(CONF_IP_ADDRESS),
+                    CONF_PORT: entry.data.get(CONF_PORT),
+                },
+            ),
             errors=errors,
         )
 
