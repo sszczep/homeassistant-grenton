@@ -22,7 +22,9 @@ _LOGGER = logging.getLogger(__name__)
 
 # CLU's UDP buffer caps how many keys fit in one clientRegister payload.
 # 30 keys is empirically safe; payload + AES padding stays under the MTU.
-MAX_KEYS_PER_REGISTER = 30
+# TEMPORARY: set to 1 to force multiple sub-subscriptions for diagnostic
+# of clientReport wire format. Revert to 30 after testing.
+MAX_KEYS_PER_REGISTER = 1
 
 StateKey = GrentonCluStateVariableKey | GrentonCluStateAttributeKey
 
