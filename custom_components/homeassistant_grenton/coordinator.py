@@ -182,16 +182,14 @@ class GrentonCoordinator(DataUpdateCoordinator):
                 _LOGGER.error("Failed to connect API for CLU %s", api.clu.id)
                 return
             
-            # Set subscription callback to handle reports
-            if api.protocol:
-                async def handle_subscription(
-                    keys: list[GrentonCluStateVariableKey | GrentonCluStateAttributeKey],
-                    values: list[GrentonValue],
-                ) -> None:
-                    await self._process_report(api.clu.id, keys, values)
-                api.protocol.subscription_callback = handle_subscription
-            else:
-                _LOGGER.error("Failed to set subscription callback for CLU %s", api.clu.id)
+            # Each chunk's subscription socket reports through this single hook;
+            # the API layer fans out per-chunk callbacks internally.
+            async def handle_subscription(
+                keys: list[GrentonCluStateVariableKey | GrentonCluStateAttributeKey],
+                values: list[GrentonValue],
+            ) -> None:
+                await self._process_report(api.clu.id, keys, values)
+            api.on_subscription_report = handle_subscription
         except Exception as e:
             _LOGGER.error("Error connecting API for CLU %s: %s", api.clu.id, e)
     
