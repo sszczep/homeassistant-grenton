@@ -20,6 +20,12 @@ from .clu_messages import (
 
 _LOGGER = logging.getLogger(__name__)
 
+# CLU's UDP buffer caps how many keys fit in one clientRegister payload.
+# 30 keys is empirically safe; payload + AES padding stays under the MTU.
+MAX_KEYS_PER_REGISTER = 30
+
+StateKey = GrentonCluStateVariableKey | GrentonCluStateAttributeKey
+
 class GrentonCluApi:
     """Handles all communication with Grenton CLUs via UDP."""
     
@@ -27,11 +33,14 @@ class GrentonCluApi:
         self.clu = clu
         self.encryption = encryption
         self.cipher = GrentonCipher(encryption)
-        
+
         self.transport: Optional[asyncio.DatagramTransport] = None
         self.protocol: Optional[GrentonCluApiProtocol] = None
         self.keep_alive_id = secrets.token_hex(4)
-        self.subscription_id = secrets.token_hex(4)
+
+        # session_id -> keys registered under that session, so incoming
+        # clientReport notifications can be mapped back to their keys.
+        self.subscriptions: Dict[int, list[StateKey]] = {}
         
     async def connect(self) -> bool:
         """Establish UDP connection to the CLU."""
@@ -77,28 +86,58 @@ class GrentonCluApi:
         
         return True
     
-    async def register_component_states(self, keys: list[GrentonCluStateVariableKey | GrentonCluStateAttributeKey]) -> list[GrentonValue] | None:
-        """Register component state keys with the CLU."""
+    async def register_component_states(self, keys: list[StateKey]) -> list[GrentonValue] | None:
+        """Register component state keys with the CLU, chunked into sub-subscriptions.
+
+        Splits ``keys`` into chunks of at most MAX_KEYS_PER_REGISTER and registers each
+        as a separate sub-subscription (distinct session_id), so any single payload
+        fits in the CLU's UDP buffer. Returns initial values in the same order as the
+        input ``keys``; positions for chunks that failed are filled with None.
+        """
         if not keys:
             _LOGGER.debug("[%s] No state keys to register", self.clu.id)
             return None
-        
+
         if not self.protocol:
             _LOGGER.warning("[%s] No protocol available for registration", self.clu.id)
             return None
-        
-        request = GrentonCluApiClientRegisterRequest(keys, self.subscription_id)
-        wire_message = await self.protocol.send_request(request)
-        
-        if wire_message is None:
-            return None
-        
-        try:
-            response = GrentonCluApiClientRegisterResponse(wire_message)
-            return response.values
-        except ValueError as e:
-            _LOGGER.error("[%s] Failed to parse register response: %s", self.clu.id, e)
-            return None
+
+        chunks = [
+            keys[i : i + MAX_KEYS_PER_REGISTER]
+            for i in range(0, len(keys), MAX_KEYS_PER_REGISTER)
+        ]
+
+        # Allocate a fresh set of session ids so old reports against stale sessions
+        # don't get matched to new keys after a chunk count change.
+        self.subscriptions = {}
+        session_ids: list[int] = []
+        for chunk in chunks:
+            sid = self._next_session_id()
+            self.subscriptions[sid] = chunk
+            session_ids.append(sid)
+
+        async def _send(sid: int, chunk: list[StateKey]) -> list[GrentonValue]:
+            request = GrentonCluApiClientRegisterRequest(chunk, sid, secrets.token_hex(4))
+            wire = await self.protocol.send_request(request) # type: ignore[union-attr]
+            if wire is None:
+                return [None] * len(chunk)
+            try:
+                return GrentonCluApiClientRegisterResponse(wire).values
+            except ValueError as e:
+                _LOGGER.error("[%s] Failed to parse register response (sid=%d): %s", self.clu.id, sid, e)
+                return [None] * len(chunk)
+
+        results = await asyncio.gather(
+            *(_send(sid, chunk) for sid, chunk in zip(session_ids, chunks))
+        )
+        return [value for chunk_values in results for value in chunk_values]
+
+    def _next_session_id(self) -> int:
+        """Pick a random uint16 session id that isn't already in use locally."""
+        while True:
+            sid = secrets.randbelow(65535) + 1  # 1..65535, avoid 0
+            if sid not in self.subscriptions:
+                return sid
     
     async def execute_action(self, action: GrentonAction) -> bool:
         """Execute an action on the CLU."""
@@ -120,7 +159,7 @@ class GrentonCluApiProtocol(asyncio.DatagramProtocol):
         self._pending: Dict[str, asyncio.Future[str]] = {}
         self._pending_lock = asyncio.Lock()
         self._response_timeout = 5.0
-        self.subscription_callback: Optional[Callable[[list[GrentonValue]], Awaitable[None]]] = None
+        self.subscription_callback: Optional[Callable[[list[StateKey], list[GrentonValue]], Awaitable[None]]] = None
     
     def connection_made(self, transport: asyncio.DatagramTransport) -> None:
         _LOGGER.debug("[%s] UDP connection established", self.api.clu.name)
@@ -174,9 +213,22 @@ class GrentonCluApiProtocol(asyncio.DatagramProtocol):
                     if self.subscription_callback:
                         try:
                             notification = GrentonCluApiClientReportNotification(wire_message)
-                            await self.subscription_callback(notification.values)
                         except ValueError as e:
                             _LOGGER.error("[%s] Failed to parse client report: %s", self.api.clu.name, e)
+                            return
+                        if notification.session_id is None:
+                            _LOGGER.warning("[%s] Client report without session_id: %s", self.api.clu.name, wire_message)
+                            return
+                        keys = self.api.subscriptions.get(notification.session_id)
+                        if keys is None:
+                            _LOGGER.warning(
+                                "[%s] Client report for unknown session_id=%d (have %s)",
+                                self.api.clu.name,
+                                notification.session_id,
+                                list(self.api.subscriptions.keys()),
+                            )
+                            return
+                        await self.subscription_callback(keys, notification.values)
                     else:
                         _LOGGER.debug("[%s][%s] Received report but no callback registered", self.api.clu.name, message_id)
                 else:

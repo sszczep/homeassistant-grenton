@@ -89,12 +89,7 @@ class GrentonCoordinator(DataUpdateCoordinator):
             keys = clu_state.get_subscription_order()
             values = await api.register_component_states(keys)
             if values:
-                # Update state by zipping keys with values
-                for key, value in zip(keys, values):
-                    if isinstance(key, GrentonCluStateVariableKey):
-                        clu_state.set_variable(key, value)
-                    elif isinstance(key, GrentonCluStateAttributeKey): # type: ignore
-                        clu_state.set_attribute(key, value)
+                clu_state.update_keys(keys, values)
                 self.async_set_updated_data(self.state.__dict__)
         except Exception as e:
             _LOGGER.error("[%s] Error during registration: %s", clu_id, e)
@@ -139,16 +134,16 @@ class GrentonCoordinator(DataUpdateCoordinator):
         except Exception as e:
             _LOGGER.error("[%s] Error executing action: %s", action.clu_id, e)
     
-    async def _process_report(self, clu_id: str, values: list[GrentonValue]) -> None:
-        """Process a report from a CLU and update state values.
-        
-        Args:
-            clu_id: The CLU identifier
-            values: Parsed values from the report
-        """
+    async def _process_report(
+        self,
+        clu_id: str,
+        keys: list[GrentonCluStateVariableKey | GrentonCluStateAttributeKey],
+        values: list[GrentonValue],
+    ) -> None:
+        """Process a report from a CLU and update state for the given keys."""
         clu_state = self.state.clus[clu_id]
-        clu_state.update_state(values)
-        
+        clu_state.update_keys(keys, values)
+
         self.async_set_updated_data(self.state.__dict__)
         _LOGGER.debug("[%s] Processed report with %d values", clu_id, len(values))
     
@@ -189,8 +184,11 @@ class GrentonCoordinator(DataUpdateCoordinator):
             
             # Set subscription callback to handle reports
             if api.protocol:
-                async def handle_subscription(values: list[GrentonValue]) -> None:
-                    await self._process_report(api.clu.id, values)
+                async def handle_subscription(
+                    keys: list[GrentonCluStateVariableKey | GrentonCluStateAttributeKey],
+                    values: list[GrentonValue],
+                ) -> None:
+                    await self._process_report(api.clu.id, keys, values)
                 api.protocol.subscription_callback = handle_subscription
             else:
                 _LOGGER.error("Failed to set subscription callback for CLU %s", api.clu.id)
