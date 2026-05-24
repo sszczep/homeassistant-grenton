@@ -15,6 +15,7 @@ from .multisensor import GrentonWidgetMultisensorDto
 from .roller_shutter import GrentonWidgetRollerShutterDto
 from .roller_shutter_v3 import GrentonWidgetRollerShutterV3Dto
 from .camera import GrentonWidgetCameraDto
+from .scene import GrentonWidgetSceneDto
 
 # Discriminated union using the 'type' field for secure deserialization
 GrentonWidgetUnionDto = Annotated[
@@ -32,6 +33,7 @@ GrentonWidgetUnionDto = Annotated[
         GrentonWidgetRollerShutterDto,
         GrentonWidgetRollerShutterV3Dto,
         GrentonWidgetCameraDto,
+        GrentonWidgetSceneDto,
     ],
     Field(discriminator="type"),
 ]

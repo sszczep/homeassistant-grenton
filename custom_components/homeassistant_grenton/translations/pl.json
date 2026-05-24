@@ -80,7 +80,23 @@
     }
   },
 
+  "services": {
+    "run_scene": {
+      "name": "Uruchom scenę",
+      "description": "Uruchamia skrypt sceny Grenton, opcjonalnie przekazując parametr.",
+      "fields": {
+        "parameter": {
+          "name": "Parametr",
+          "description": "Opcjonalna wartość przekazywana dosłownie do wywołania skryptu (składnia Lua: \"abc\" dla stringa, 42 dla liczby). Pozostaw puste, aby użyć domyślnej wartości z widgetu."
+        }
+      }
+    }
+  },
+
   "device": {
+    "scene": {
+      "name": "Scena"
+    },
     "on_off": {
       "name": "Przełącznik On/Off"
     },
