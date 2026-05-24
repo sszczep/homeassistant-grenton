@@ -216,16 +216,36 @@ class GrentonCluApiProtocol(asyncio.DatagramProtocol):
                         except ValueError as e:
                             _LOGGER.error("[%s] Failed to parse client report: %s", self.api.clu.name, e)
                             return
-                        if notification.session_id is None:
-                            _LOGGER.warning("[%s] Client report without session_id: %s", self.api.clu.name, wire_message)
-                            return
-                        keys = self.api.subscriptions.get(notification.session_id)
+                        # Diagnostic: log the raw payload so we can confirm the wire format
+                        # of notifications (msg_id=00000000) vs the immediate register response.
+                        _LOGGER.debug(
+                            "[%s] Notification payload: %r (parsed session_id=%s, %d values)",
+                            self.api.clu.name,
+                            notification.payload,
+                            notification.session_id,
+                            len(notification.values),
+                        )
+
+                        keys = self.api.subscriptions.get(notification.session_id) if notification.session_id is not None else None
+
+                        # Fallback: CLU notifications don't appear to echo our session_id
+                        # in the position we expected. As long as exactly one subscription
+                        # is active, the report can only belong to that subscription.
+                        if keys is None and len(self.api.subscriptions) == 1:
+                            keys = next(iter(self.api.subscriptions.values()))
+                            _LOGGER.debug(
+                                "[%s] Falling back to single active subscription for report (parsed sid=%s)",
+                                self.api.clu.name,
+                                notification.session_id,
+                            )
+
                         if keys is None:
                             _LOGGER.warning(
-                                "[%s] Client report for unknown session_id=%d (have %s)",
+                                "[%s] Could not match client report to a subscription (parsed sid=%s, active sids=%s, payload=%r)",
                                 self.api.clu.name,
                                 notification.session_id,
                                 list(self.api.subscriptions.keys()),
+                                notification.payload,
                             )
                             return
                         await self.subscription_callback(keys, notification.values)
