@@ -3,6 +3,7 @@ import logging
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
+from homeassistant.helpers import device_registry as dr, entity_registry as er
 
 from .integration_config import GrentonConfigEntry, GrentonConfigEntryData, RuntimeData
 from .coordinator import GrentonCoordinator
@@ -47,12 +48,49 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: GrentonConfigEntr
     # Store runtime data
     config_entry.runtime_data = RuntimeData(coordinator=coordinator, devices=devices)
 
+    # Drop entities and devices that no longer exist in the freshly fetched interface
+    _cleanup_orphans(hass, config_entry, devices)
+
     # Setup the coordinator
     await coordinator.async_setup()
-    
+
     await hass.config_entries.async_forward_entry_setups(config_entry, PLATFORMS)
 
     return True
+
+
+def _cleanup_orphans(
+    hass: HomeAssistant,
+    config_entry: ConfigEntry,
+    devices: list,
+) -> None:
+    """Remove entity/device registry entries that no longer back a live widget.
+
+    Why: device_info identifiers and entity unique_ids are derived from widget IDs
+    in the mobile interface JSON. After a reconfigure that drops widgets, the old
+    registry rows would otherwise linger as `unavailable`.
+    """
+    valid_entity_uids: set[str] = {
+        entity.unique_id
+        for device in devices
+        for entity in device.entities
+        if entity.unique_id
+    }
+    valid_device_identifiers: set[tuple[str, str]] = {
+        ("grenton", device.id) for device in devices
+    }
+
+    entity_reg = er.async_get(hass)
+    for entry in er.async_entries_for_config_entry(entity_reg, config_entry.entry_id):
+        if entry.unique_id not in valid_entity_uids:
+            _LOGGER.debug("Removing orphaned entity %s (uid=%s)", entry.entity_id, entry.unique_id)
+            entity_reg.async_remove(entry.entity_id)
+
+    device_reg = dr.async_get(hass)
+    for device in dr.async_entries_for_config_entry(device_reg, config_entry.entry_id):
+        if not any(identifier in valid_device_identifiers for identifier in device.identifiers):
+            _LOGGER.debug("Removing orphaned device %s", device.id)
+            device_reg.async_update_device(device.id, remove_config_entry_id=config_entry.entry_id)
 
 async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     coordinator: GrentonCoordinator = config_entry.runtime_data.coordinator

@@ -11,6 +11,15 @@
           "port": "Port",
           "pin": "PIN"
         }
+      },
+      "reconfigure": {
+        "title": "Reconfigure Grenton Interface",
+        "description": "Re-enter the address, port and current PIN to fetch an updated interface. New widgets will be added; existing entities keep their configuration.",
+        "data": {
+          "ip_address": "IP Address",
+          "port": "Port",
+          "pin": "PIN"
+        }
       }
     },
     "error": {
@@ -18,6 +27,10 @@
       "invalid_data": "Data from the device was missing or malformed.",
       "cannot_connect": "Unable to connect to the Grenton Object Manager at the given address.",
       "unknown": "Unknown error occurred."
+    },
+    "abort": {
+      "reconfigure_successful": "Interface refreshed successfully.",
+      "wrong_interface": "The fetched interface belongs to a different installation than the one being reconfigured."
     }
   },
 

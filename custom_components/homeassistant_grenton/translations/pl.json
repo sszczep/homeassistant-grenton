@@ -11,6 +11,15 @@
           "port": "Port",
           "pin": "PIN"
         }
+      },
+      "reconfigure": {
+        "title": "Rekonfiguruj interfejs Grenton",
+        "description": "Podaj adres, port i aktualny PIN, aby pobrać zaktualizowany interfejs. Nowe widgety zostaną dodane, a istniejące encje zachowają swoją konfigurację.",
+        "data": {
+          "ip_address": "Adres IP",
+          "port": "Port",
+          "pin": "PIN"
+        }
       }
     },
     "error": {
@@ -18,6 +27,10 @@
       "invalid_data": "Dane z urządzenia były niekompletne lub nieprawidłowe.",
       "cannot_connect": "Nie można połączyć się z Grenton Object Manager pod podanym adresem.",
       "unknown": "Wystąpił nieznany błąd."
+    },
+    "abort": {
+      "reconfigure_successful": "Interfejs został pomyślnie odświeżony.",
+      "wrong_interface": "Pobrany interfejs należy do innej instalacji niż ta, która jest rekonfigurowana."
     }
   },
 
