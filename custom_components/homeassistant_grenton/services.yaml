@@ -1,0 +1,18 @@
+run_scene:
+  name: Run scene
+  description: Run a Grenton SCENE script, optionally passing a parameter.
+  target:
+    entity:
+      integration: grenton
+      domain: button
+  fields:
+    parameter:
+      name: Parameter
+      description: >
+        Optional parameter passed verbatim into the script call. Use Lua syntax
+        (e.g. quoted "abc" for a string, 42 for a number). Leave empty to run
+        with the default value defined in the scene widget.
+      example: "\"123\""
+      required: false
+      selector:
+        text:
