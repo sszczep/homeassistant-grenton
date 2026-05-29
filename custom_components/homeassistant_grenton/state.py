@@ -148,17 +148,26 @@ class GrentonCluState:
         return self._subscription_order
     
     def update_state(self, values: list[GrentonValue]) -> None:
-        """Update state with report values.
-        
-        Args:
-            values: List of values in subscription order
+        """Update state with report values in subscription order."""
+        self.update_keys(self.get_subscription_order(), values)
+
+    def update_keys(
+        self,
+        keys: list[GrentonCluStateVariableKey | GrentonCluStateAttributeKey],
+        values: list[GrentonValue],
+    ) -> None:
+        """Update state for the given keys with the matching values.
+
+        Positions where value is None are skipped — a None marks a failed chunk
+        in register_component_states, not an actual nil value from the CLU.
         """
-        keys = self.get_subscription_order()
-        
         for key, value in zip(keys, values):
+            if value is None:
+                continue
             if isinstance(key, GrentonCluStateVariableKey):
-                self.variables[key].value = value
-            else:
+                if key in self.variables:
+                    self.variables[key].value = value
+            elif key in self.attributes:
                 self.attributes[key].value = value
 
 
