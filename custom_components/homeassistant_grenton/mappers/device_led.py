@@ -2,13 +2,20 @@
 
 from ..coordinator import GrentonCoordinator
 from ..domain.devices.led import GrentonDeviceLed
-from ..domain.state_object import GrentonStateObject
-from ..domain.action import GrentonAction
+from ..domain.state_object import GrentonStateObject, GrentonAttributeValueObject
+from ..domain.action import GrentonAction, GrentonActionMethod
 from ..domain.entities.led import GrentonEntityLed
 from ..domain.enums import GrentonActionEventType
 
 from ..dto.widgets.led import GrentonWidgetLedDto
 from ..dto.components.led import GrentonComponentLedButtonDto, GrentonComponentLedHueDto, GrentonComponentLedSaturationDto, GrentonComponentLedBrightnessDto
+
+# White channel of a Grenton RGBW LED object is not exposed in the mobile
+# interface. It is reachable on the same object via method index 12 (set) and
+# attribute index 15 (read), matching the values Grenton uses elsewhere.
+LED_WHITE_SET_INDEX = "12"
+LED_WHITE_STATE_INDEX = "15"
+LED_WHITE_RANGE: tuple[float, float] = (0, 255)
 
 
 class DeviceLedMapper:
@@ -53,7 +60,22 @@ class DeviceLedMapper:
 
         if not action_on or not action_off:
             return device  # Incomplete LED button actions, return device without entities
-        
+
+        # The mobile interface has no white component; synthesize one on the same
+        # LED object so RGBW strips expose their white channel.
+        white_action = GrentonActionMethod(
+            clu_id=action_on.clu_id,
+            object_name=action_on.object_name,
+            event=GrentonActionEventType.CLICK,
+            value="0",
+            index=LED_WHITE_SET_INDEX,
+        )
+        white_state_object = GrentonAttributeValueObject(
+            clu_id=action_on.clu_id,
+            object_name=action_on.object_name,
+            index=LED_WHITE_STATE_INDEX,
+        )
+
         entity = GrentonEntityLed(
             coordinator=coordinator,
             id=f"{dto.id}_0",
@@ -70,6 +92,9 @@ class DeviceLedMapper:
             brightness_action=GrentonAction.from_dto(brightness_component.actions[0]),
             brightness_state_object=GrentonStateObject.from_dto(brightness_component.state),
             brightness_range=(brightness_component.range.min, brightness_component.range.max),
+            white_action=white_action,
+            white_state_object=white_state_object,
+            white_range=LED_WHITE_RANGE,
             device_info=device.device_info,
         )
 
