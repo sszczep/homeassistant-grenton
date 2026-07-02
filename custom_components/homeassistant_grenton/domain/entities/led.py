@@ -7,6 +7,7 @@ from .base import BaseGrentonEntity
 from ..action import GrentonAction
 from ..state_object import GrentonStateObject
 from ...coordinator import GrentonCoordinator
+from ...state import grenton_value_to_bool
 from homeassistant.helpers.device_registry import DeviceInfo
 
 from ..utils.ranges import map_range
@@ -86,7 +87,7 @@ class GrentonEntityLed(BaseGrentonEntity, LightEntity): # pyright: ignore[report
         white = self._white_value()
         if value is None and white is None:
             return None
-        if value is not None and bool(value):
+        if value is not None and grenton_value_to_bool(value):
             return True
         if white is not None and white > 0:
             return True
