@@ -8,6 +8,7 @@ from ..enums import GrentonUnit
 from ..state_object import GrentonStateObject
 from ..action import GrentonAction
 from ...coordinator import GrentonCoordinator
+from ...state import grenton_value_to_bool
 
 
 class GrentonEntityBistableSwitch(BaseGrentonEntity, SwitchEntity): # pyright: ignore[reportIncompatibleVariableOverride]
@@ -41,7 +42,7 @@ class GrentonEntityBistableSwitch(BaseGrentonEntity, SwitchEntity): # pyright: i
         value = self.coordinator.get_value_for_component(self.state_object)
         if value is None:
             return None
-        return value == "ON" or value == True
+        return grenton_value_to_bool(value)
 
     async def async_turn_on(self, **kwargs: Any):
         """Turn the switch on."""
