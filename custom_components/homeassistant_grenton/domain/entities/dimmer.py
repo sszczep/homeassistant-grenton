@@ -10,6 +10,7 @@ from ...coordinator import GrentonCoordinator
 from homeassistant.helpers.device_registry import DeviceInfo
 
 from ..utils.ranges import map_range
+from ..utils.values import format_action_value
 
 class GrentonEntityDimmer(BaseGrentonEntity, LightEntity): # pyright: ignore[reportIncompatibleVariableOverride]
     """Dimmer light entity."""
@@ -78,11 +79,11 @@ class GrentonEntityDimmer(BaseGrentonEntity, LightEntity): # pyright: ignore[rep
             brightness = self._last_brightness or 255
         # Convert from HA range (0-255) to device range
         device_value = map_range((0, 255), (self.min, self.max), brightness)
-        self.action_set_value.value = str(round(device_value, self.precision))
+        self.action_set_value.value = format_action_value(device_value, self.precision)
         await self.coordinator.execute_action(self.action_set_value)
         self._last_brightness = brightness
 
     async def async_turn_off(self, **kwargs: Any):
         """Turn the light off by setting its value to the minimum."""
-        self.action_set_value.value = str(round(self.min, self.precision))
+        self.action_set_value.value = format_action_value(self.min, self.precision)
         await self.coordinator.execute_action(self.action_set_value)
