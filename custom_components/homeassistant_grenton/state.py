@@ -55,7 +55,7 @@ class GrentonCluStateVariable:
     
     def __init__(self, name: str, value: GrentonValue | None = None):
         self.name = name
-        self.value = value if value is not None else ""
+        self.value = value
 
 
 @dataclass
@@ -68,7 +68,7 @@ class GrentonCluStateAttribute:
     def __init__(self, object_name: str, name: str, value: GrentonValue | None = None):
         self.object_name = object_name
         self.name = name
-        self.value = value if value is not None else ""
+        self.value = value
     
     @property
     def key(self) -> GrentonCluStateAttributeKey:
