@@ -14,6 +14,7 @@ from .configurable import ConfigurableEntity, BaseGrentonEntityConfigurationSche
 from ..state_object import GrentonStateObject
 from ...coordinator import GrentonCoordinator
 from ..action import GrentonAction
+from ..utils.values import format_action_value
 
 @dataclass
 class GrentonEntitySliderConfigurationSchema(BaseGrentonEntityConfigurationSchema):
@@ -162,7 +163,7 @@ class GrentonEntitySlider( # pyright: ignore[reportIncompatibleVariableOverride]
         return self.coordinator.get_value_for_component(self.state_object)
     
     async def async_set_native_value(self, value: float) -> None:  # pyright: ignore[reportIncompatibleVariableOverride]
-        self.action_set_value.value = str(round(value, self.precision))
+        self.action_set_value.value = format_action_value(value, self.precision)
         await self.coordinator.execute_action(self.action_set_value)
     
     @property

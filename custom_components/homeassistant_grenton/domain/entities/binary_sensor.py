@@ -11,6 +11,7 @@ from .base import BaseGrentonEntity
 from .configurable import ConfigurableEntity, BaseGrentonEntityConfigurationSchema, StepResult, StepDefinition
 from ..state_object import GrentonStateObject
 from ...coordinator import GrentonCoordinator
+from ...state import grenton_value_to_bool
 
 @dataclass
 class GrentonEntityBinarySensorConfigurationSchema(BaseGrentonEntityConfigurationSchema):
@@ -75,7 +76,8 @@ class GrentonEntityBinarySensor( # pyright: ignore[reportIncompatibleVariableOve
         value = self.coordinator.get_value_for_component(self.state_object)
         if value is None:
             return None
-        return not bool(value) if self.reversed else bool(value)
+        state = grenton_value_to_bool(value)
+        return not state if self.reversed else state
 
     @property
     def device_class(self) -> BinarySensorDeviceClass | None:  # pyright: ignore[reportIncompatibleVariableOverride]

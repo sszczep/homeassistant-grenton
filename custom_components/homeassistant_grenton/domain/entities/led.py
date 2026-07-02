@@ -7,6 +7,7 @@ from .base import BaseGrentonEntity
 from ..action import GrentonAction
 from ..state_object import GrentonStateObject
 from ...coordinator import GrentonCoordinator
+from ...state import grenton_value_to_bool
 from homeassistant.helpers.device_registry import DeviceInfo
 
 from ..utils.ranges import map_range
@@ -66,7 +67,7 @@ class GrentonEntityLed(BaseGrentonEntity, LightEntity): # pyright: ignore[report
         value = self.coordinator.get_value_for_component(self.state_object)
         if value is None:
             return None
-        return bool(value)
+        return grenton_value_to_bool(value)
 
     @property
     def brightness(self) -> int | None: # pyright: ignore[reportIncompatibleVariableOverride]
