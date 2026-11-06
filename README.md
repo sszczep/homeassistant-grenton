@@ -169,6 +169,16 @@ Each object chooses its connection:
 | **UDP** | CLU present in the imported interface | instant (CLU subscription) |
 | **Gate HTTP** | GATE HTTP module + HttpListener below | polling (Gate settings) |
 
+#### Migrating from Grenton Objects
+
+If you used [Grenton Objects](https://github.com/jnalepka/grenton-objects-home-assistant),
+open **Configure → Import from Grenton Objects**. Every object becomes a
+manual object here (UDP when its CLU is in the myGrenton interface, otherwise
+Gate HTTP, whose URL is copied). With **Take over entities** the old entries
+are removed and the new entities keep the same `entity_id`, name, icon, area,
+aliases and labels, so automations and dashboards keep working. Variables kept
+on the Gate itself (no `CLU->` part) cannot be imported and stay as they are.
+
 #### Connection status
 
 Every CLU and the Gate HTTP get a diagnostic **connectivity** binary sensor

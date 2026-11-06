@@ -99,6 +99,11 @@ class GrentonOptionsFlow(OptionsFlowWithReload):
             has_manual = False
         if has_manual:
             menu.insert(4, "remove_object")
+        try:
+            if self.hass.config_entries.async_entries("grenton_objects"):
+                menu.append("import_grenton_objects")
+        except AttributeError:  # flow not bound to hass yet
+            pass
         return self.async_show_menu(step_id="init", menu_options=menu)
 
     # --- names, units and precision (same form as during import) -----------
@@ -147,6 +152,66 @@ class GrentonOptionsFlow(OptionsFlowWithReload):
                 "step": str(self._name_index + 1),
                 "total": str(len(self._name_pages)),
                 "count": str(len(page.devices)),
+            },
+        )
+
+    # --- import from the Grenton Objects integration ------------------------
+    async def async_step_import_grenton_objects(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        from .grenton_objects_import import (
+            async_import, entity_configs, find_candidates, most_common_endpoint,
+        )
+
+        candidates = find_candidates(self.hass)
+        importable = [c for c in candidates if c.definition is not None]
+        if not importable:
+            return self.async_abort(reason="no_grenton_objects")
+
+        if user_input is not None:
+            selected_ids = set(user_input.get("objects") or [])
+            selected = [c for c in importable if c.source_entry_id in selected_ids]
+            entry = self.config_entry
+            clus = entry.runtime_data.coordinator.clus if getattr(entry, "runtime_data", None) else []
+            definitions = await async_import(
+                self.hass, entry, selected, clus,
+                prefer_udp=bool(user_input.get("prefer_udp", True)),
+                take_over=bool(user_input.get("take_over", True)),
+            )
+            options = dict(entry.options)
+            options[CONF_MANUAL_OBJECTS] = list(options.get(CONF_MANUAL_OBJECTS, [])) + definitions
+            gate = dict(options.get(CONF_GATE) or {})
+            if not gate.get(CONF_GATE_URL) and any(d["transport"] == TRANSPORT_GATE for d in definitions):
+                gate[CONF_GATE_URL] = most_common_endpoint(selected) or ""
+                gate.setdefault(CONF_GATE_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
+                options[CONF_GATE] = gate
+            entities = dict(options.get("entities") or {})
+            entities.update(entity_configs(selected, definitions))
+            options["entities"] = entities
+            self.automatic_reload = True
+            return self.async_create_entry(title="", data=options)
+
+        skipped = [c for c in candidates if c.definition is None]
+        return self.async_show_form(
+            step_id="import_grenton_objects",
+            data_schema=vol.Schema({
+                vol.Required("objects", default=[c.source_entry_id for c in importable]): selector.SelectSelector(  # type: ignore[misc]
+                    selector.SelectSelectorConfig(
+                        options=[
+                            selector.SelectOptionDict(
+                                value=c.source_entry_id,
+                                label=f"{c.title} ({c.grenton_id}, {c.platform}) → {c.old_entity_id}",
+                            )
+                            for c in importable
+                        ],
+                        multiple=True,
+                        mode=selector.SelectSelectorMode.LIST,
+                    )
+                ),
+                vol.Optional("prefer_udp", default=True): bool,
+                vol.Optional("take_over", default=True): bool,
+            }),
+            description_placeholders={
+                "count": str(len(importable)),
+                "skipped": ", ".join(f"{c.title} ({c.grenton_id})" for c in skipped) or "—",
             },
         )
 
