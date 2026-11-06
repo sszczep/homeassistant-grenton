@@ -51,7 +51,7 @@
     "step": {
       "entity_list": {
         "title": "Konfiguruj encje",
-        "description": "Wybierz encję, aby skonfigurować jej właściwości.",
+        "description": "Wybierz typ lub przeszukaj wszystkie encje.",
         "data": {
           "entity": "Encja"
         }
@@ -65,7 +65,7 @@
       },
       "configure_sensor_unit": {
         "title": "Konfiguruj {entity_name} - Jednostka miary",
-        "description": "Wybierz jednostkę miary dla wybranej klasy urządzenia.",
+        "description": "Wybierz jednostkę. Bez klasy urządzenia możesz też wpisać własną.",
         "data": {
           "unit_of_measurement": "Jednostka miary"
         }
@@ -98,13 +98,160 @@
           "device_class": "Klasa urządzenia"
         }
       },
+      "configure_scene_action": {
+        "title": "Konfiguruj {entity_name} - Akcja sceny",
+        "description": "Wybierz typ wywołania, a następnie skonfiguruj jego cel i argumenty.",
+        "data": {
+          "action": "Wywołanie sceny"
+        }
+      },
+      "configure_on_off_state": {
+        "title": "Konfiguracja {entity_name} - Stan (1/3)",
+        "description": "Wybierz przełącznik lub światło i skonfiguruj cechę lub zmienną, która udostępnia aktualny stan. Zmiana typu encji zmienia jej identyfikator; po zapisaniu zaktualizuj odwołania w panelach i automatyzacjach.",
+        "data": {
+          "entity_type": "Typ encji",
+          "state": "Źródło stanu"
+        }
+      },
+      "configure_on_off_on_action": {
+        "title": "Konfiguracja {entity_name} - Włączanie (2/3)",
+        "description": "Wybierz typ wywołania i skonfiguruj obiekt, wartość lub argumenty akcji włączania.",
+        "data": {
+          "action_on": "Akcja włączania"
+        }
+      },
+      "configure_on_off_off_action": {
+        "title": "Konfiguracja {entity_name} - Wyłączanie (3/3)",
+        "description": "Wybierz typ wywołania i skonfiguruj obiekt, wartość lub argumenty akcji wyłączania. Zapisanie przeładowuje integrację i stosuje ustawienia ze wszystkich trzech formularzy.",
+        "data": {
+          "action_off": "Akcja wyłączania"
+        }
+      },
+      "configure_dimmer_state": {
+        "title": "Konfiguracja {entity_name} - Źródło jasności (1/4)",
+        "description": "Wybierz źródło jasności i jego zakres. Precyzja określa liczbę miejsc po przecinku wysyłanych do Grentona.",
+        "data": {
+          "state": "Źródło jasności",
+          "min": "Wartość minimalna",
+          "max": "Wartość maksymalna",
+          "precision": "Miejsca po przecinku"
+        }
+      },
+      "configure_dimmer_on_action": {
+        "title": "Konfiguracja {entity_name} - Włączanie (2/4)",
+        "description": "Skonfiguruj wywołanie włączania.",
+        "data": {
+          "action_on": "Akcja włączania"
+        }
+      },
+      "configure_dimmer_off_action": {
+        "title": "Konfiguracja {entity_name} - Wyłączanie (3/4)",
+        "description": "Skonfiguruj wywołanie wyłączania.",
+        "data": {
+          "action_off": "Akcja wyłączania"
+        }
+      },
+      "configure_dimmer_brightness_action": {
+        "title": "Konfiguracja {entity_name} - Ustawianie jasności (4/4)",
+        "description": "Użyj $value$ jako jasności w zakresie Grentona. Dla skryptu/metody wybierz argument typu wyrażenie Lua. Zachowaj pozostałe potrzebne argumenty. Zapisanie przeładowuje integrację.",
+        "data": {
+          "action_set_value": "Akcja ustawiania jasności"
+        }
+      },
+      "clu_variables": {
+        "title": "Konfiguracja zmiennych {clu_name}",
+        "description": "Dodaj, edytuj lub usuń własne zmienne CLU udostępnione w Home Assistant.",
+        "data": {
+          "operation": "Operacja"
+        }
+      },
+      "clu_variable_select": {
+        "title": "Edycja zmiennej CLU",
+        "description": "Wybierz zmienną do konfiguracji.",
+        "data": {
+          "variable_id": "Zmienna"
+        }
+      },
+      "clu_variable_remove": {
+        "title": "Usunięcie encji zmiennej CLU",
+        "description": "Usuń wybraną zmienną z Home Assistant. Jej wartość na CLU zostanie zachowana.",
+        "data": {
+          "variable_id": "Zmienna"
+        }
+      },
+      "configure_clu_variable": {
+        "title": "Konfiguracja zmiennej CLU",
+        "description": "Podaj nazwę zmiennej dokładnie tak jak w Grenton i wybierz typ wartości. Zmienne logiczne są przełącznikami, a pozostałe typy czujnikami.",
+        "data": {
+          "variable_name": "Nazwa zmiennej",
+          "label": "Nazwa wyświetlana",
+          "grenton_type": "Typ Grenton",
+          "read_mode": "Tryb odczytu"
+        },
+        "data_description": {
+          "read_mode": "Odpytywanie korzysta z interwału ustawionego dla CLU."
+        }
+      },
+      "configure_value_v2_type": {
+        "title": "Konfiguracja {entity_name} - Typ encji",
+        "description": "Wybierz typ encji i tryb odczytu.",
+        "data": {
+          "entity_type": "Typ encji",
+          "read_mode": "Tryb odczytu"
+        },
+        "data_description": {
+          "read_mode": "Temperatury są odczytywane okresowo, zgodnie z interwałem ustawionym dla CLU."
+        }
+      },
+      "configure_value_v2_binary": {
+        "title": "Konfiguracja {entity_name} - Czujnik binarny",
+        "description": "Wybierz klasę urządzenia. Domyślnie wartości dodatnie oznaczają wyłączony (zamknięty), a 0 lub wartości ujemne oznaczają włączony (otwarty). Włącz opcję Odwróć stan, aby odwrócić to przypisanie. Brakujące lub nieprawidłowe wartości pozostają nieznane.",
+        "data": {
+          "device_class": "Klasa urządzenia",
+          "invert_state": "Odwróć stan"
+        },
+        "data_description": {
+          "invert_state": "Wyłączone: wartości dodatnie oznaczają wyłączony, a 0 oznacza włączony. Włączone: wartości dodatnie oznaczają włączony, a 0 oznacza wyłączony. Dla drzwi, okna i otwarcia stan włączony oznacza otwarty, a wyłączony oznacza zamknięty."
+        }
+      },
+      "configure_thermostat": {
+        "title": "Konfiguracja {entity_name} - Termostat",
+        "description": "Włącz opcjonalne chłodzenie, wybierz kierunek grzania/chłodzenia niezależnie od trybu ręcznego/harmonogramu i edytuj harmonogram tygodniowy. Zapis harmonogramu zachowuje zasilanie i tryb pracy.",
+        "data": {
+          "thermostat": "Ustawienia termostatu"
+        }
+      },
       "init": {
-        "title": "Opcje Grenton",
+        "title": "Ustawienia Grenton",
         "menu_options": {
           "entity_list": "Konfiguruj encje",
+          "clu_read_settings": "Konfiguruj CLU",
           "add_object": "Dodaj obiekt ręcznie",
           "remove_object": "Usuń ręczne obiekty",
           "gate_settings": "Ustawienia Gate HTTP"
+        }
+      },
+      "clu_read_settings": {
+        "title": "Konfiguruj CLU",
+        "description": "Wybierz CLU do konfiguracji.",
+        "data": {
+          "clu_id": "CLU"
+        }
+      },
+      "clu_configuration": {
+        "title": "Konfiguruj CLU",
+        "description": "{clu_name}",
+        "menu_options": {
+          "clu_read_interval": "Połączenie i odpytywanie",
+          "clu_variables": "Zmienne"
+        }
+      },
+      "clu_read_interval": {
+        "title": "Konfiguracja {clu_name}",
+        "description": "Ustawienia połączenia i odpytywania.",
+        "data": {
+          "slow_read_interval": "Interwał odpytywania (sekundy)",
+          "subscription_id": "Początkowy identyfikator subskrypcji"
         }
       },
       "add_object": {
@@ -148,6 +295,9 @@
       "entity_not_configurable": "Ta encja nie może być skonfigurowana."
     },
     "error": {
+      "invalid_configuration": "Wybierz poprawne opcje i wprowadź poprawne wartości.",
+      "cannot_apply_configuration": "Nie udało się zapisać konfiguracji w CLU. Sprawdź połączenie i aktualne limity temperatur, a następnie spróbuj ponownie.",
+      "cannot_read_configuration": "Nie udało się odczytać aktualnych ustawień z CLU. Sprawdź połączenie i otwórz konfigurację ponownie.",
       "invalid_grenton_id": "Nieprawidłowy identyfikator. Użyj formatu CLU->OBIEKT.",
       "clu_not_in_interface": "Tego CLU nie ma w interfejsie myGrenton. Wybierz połączenie Gate HTTP.",
       "gate_not_configured": "Najpierw skonfiguruj Gate HTTP w opcjach.",
@@ -155,13 +305,37 @@
     }
   },
   "services": {
+    "set_thermostat_schedule": {
+      "name": "Ustaw harmonogram termostatu",
+      "description": "Zastąp cały harmonogram tygodniowy termostatu, korzystając ze skonfigurowanych limitów temperatur. Zachowuje zasilanie, tryb, kierunek grzania/chłodzenia i metadane harmonogramu.",
+      "fields": {
+        "schedule": {
+          "name": "Harmonogram tygodniowy",
+          "description": "Wszystkie siedem angielskich nazw dni tygodnia małymi literami, każda z listą par time i temperature. Każdy dzień zaczyna się o 00:00; czas co 15 minut, temperatura co 0,5°C."
+        }
+      }
+    },
     "run_scene": {
       "name": "Uruchom scenę",
       "description": "Uruchamia skrypt sceny Grenton, opcjonalnie przekazując parametr.",
       "fields": {
         "parameter": {
           "name": "Parametr",
-          "description": "Opcjonalna wartość przekazywana dosłownie do wywołania skryptu (składnia Lua: \"abc\" dla stringa, 42 dla liczby). Pozostaw puste, aby użyć domyślnej wartości z widgetu."
+          "description": "Opcjonalna wartość przekazywana dosłownie do wywołania skryptu (składnia Lua: \"abc\" dla tekstu, 42 dla liczby). Pomiń to pole, aby użyć zapisanych argumentów/wartości sceny. Pusty tekst wywołuje skrypt bez argumentów."
+        }
+      }
+    },
+    "run_script": {
+      "name": "Uruchom skrypt",
+      "description": "Uruchom skrypt Grenton bezpośrednio na wykrytym CLU.",
+      "fields": {
+        "script": {
+          "name": "Skrypt",
+          "description": "Nazwa skryptu na wybranym CLU, bez nawiasów i argumentów."
+        },
+        "arguments": {
+          "name": "Argumenty z typami",
+          "description": "Argumenty pozycyjne. Dodawaj, edytuj, usuwaj lub zmieniaj kolejność. Pomiń końcowe argumenty, aby użyć wartości domyślnych skryptu; pomiń to pole lub użyj pustej listy, aby wywołać bez argumentów."
         }
       }
     }
@@ -220,6 +394,88 @@
           "locked": "zablokowane",
           "unknown": "nieznany"
         }
+      },
+      "clu_request_timeouts": {
+        "name": "Przekroczone czasy żądań"
+      },
+      "clu_subscriptions": {
+        "name": "Subskrypcje w czasie rzeczywistym"
+      },
+      "clu_controller": {
+        "name": "Sterownik"
+      },
+      "clu_uptime": {
+        "name": "Czas pracy"
+      },
+      "clu_bus_voltage": {
+        "name": "Napięcie magistrali"
+      },
+      "clu_firmware_version": {
+        "name": "Wersja oprogramowania"
+      },
+      "thermostat_schedule": {
+        "name": "Harmonogram",
+        "state_attributes": {
+          "following_schedule": {
+            "name": "Praca według harmonogramu"
+          },
+          "direction": {
+            "name": "Kierunek pracy",
+            "state": {
+              "heating": "Grzanie",
+              "cooling": "Chłodzenie"
+            }
+          },
+          "scheduled_target": {
+            "name": "Bieżąca temperatura z harmonogramu"
+          },
+          "next_change": {
+            "name": "Następna zmiana"
+          },
+          "next_target": {
+            "name": "Następna temperatura"
+          },
+          "monday": {
+            "name": "Poniedziałek"
+          },
+          "tuesday": {
+            "name": "Wtorek"
+          },
+          "wednesday": {
+            "name": "Środa"
+          },
+          "thursday": {
+            "name": "Czwartek"
+          },
+          "friday": {
+            "name": "Piątek"
+          },
+          "saturday": {
+            "name": "Sobota"
+          },
+          "sunday": {
+            "name": "Niedziela"
+          }
+        }
+      },
+      "thermostat_minimum": {
+        "name": "Temperatura minimalna"
+      },
+      "thermostat_maximum": {
+        "name": "Temperatura maksymalna"
+      }
+    },
+    "binary_sensor": {
+      "clu_connection": {
+        "name": "Połączenie"
+      },
+      "clu_cloud_connection": {
+        "name": "Połączenie z chmurą"
+      }
+    },
+    "switch": {
+      "clu_use_cloud": {
+        "name": "Używaj chmury"
       }
     }
   },
@@ -315,7 +571,8 @@
         "tamper": "Sabotaż",
         "update": "Aktualizacja",
         "vibration": "Wibracje",
-        "window": "Okno"
+        "window": "Okno",
+        "none": "Brak"
       }
     },
     "sensor_device_classes": {
@@ -370,6 +627,7 @@
         "temperature": "Temperatura",
         "temperature_delta": "Delta temperatury",
         "timestamp": "Znacznik czasu",
+        "uptime": "Czas pracy",
         "volatile_organic_compounds": "Lotne związki organiczne",
         "volatile_organic_compounds_parts": "Lotne związki organiczne",
         "voltage": "Napięcie",
@@ -379,7 +637,253 @@
         "water": "Woda",
         "weight": "Waga",
         "wind_direction": "Kierunek wiatru",
-        "wind_speed": "Prędkość wiatru"
+        "wind_speed": "Prędkość wiatru",
+        "none": "Brak"
+      }
+    },
+    "scene_call_types": {
+      "options": {
+        "SCRIPT": "Skrypt",
+        "METHOD": "Metoda",
+        "ATTRIBUTE": "Atrybut",
+        "VARIABLE": "Zmienna"
+      }
+    },
+    "scene_argument_types": {
+      "choices": {
+        "string": "Tekst",
+        "number": "Liczba",
+        "float": "Liczba zmiennoprzecinkowa",
+        "boolean": "Wartość logiczna",
+        "nil": "Nil",
+        "lua": "Wyrażenie Lua"
+      }
+    },
+    "scene_editor": {
+      "fields": {
+        "call_type": {
+          "name": "Typ wywołania"
+        },
+        "clu_id": {
+          "name": "CLU"
+        },
+        "script_name": {
+          "name": "Nazwa skryptu"
+        },
+        "object_name": {
+          "name": "Nazwa obiektu"
+        },
+        "method_index": {
+          "name": "Indeks metody"
+        },
+        "attribute_index": {
+          "name": "Indeks atrybutu"
+        },
+        "variable_name": {
+          "name": "Nazwa zmiennej"
+        },
+        "argument": {
+          "name": "Argument"
+        },
+        "argument_type": {
+          "name": "Typ"
+        },
+        "argument_value": {
+          "name": "Wartość"
+        },
+        "add_argument": {
+          "name": "Dodaj argument"
+        },
+        "remove": {
+          "name": "Usuń"
+        },
+        "move_up": {
+          "name": "Przenieś w górę"
+        },
+        "move_down": {
+          "name": "Przenieś w dół"
+        },
+        "arguments": {
+          "name": "Argumenty",
+          "description": "Pomiń końcowe argumenty, aby użyć wartości domyślnych skryptu lub metody."
+        },
+        "state_call_type": {
+          "name": "Typ źródła stanu"
+        },
+        "set_value": {
+          "name": "Ustawiana wartość"
+        }
+      }
+    },
+    "on_off_entity_types": {
+      "options": {
+        "switch": "Przełącznik",
+        "light": "Światło"
+      }
+    },
+    "clu_variable_operations": {
+      "options": {
+        "add": "Dodaj zmienną",
+        "edit": "Edytuj zmienną",
+        "remove": "Usuń zmienną"
+      }
+    },
+    "grenton_variable_types": {
+      "options": {
+        "BOOLEAN": "Wartość logiczna",
+        "STRING": "Tekst",
+        "INTEGER": "Liczba całkowita",
+        "FLOAT": "Liczba zmiennoprzecinkowa"
+      }
+    },
+    "value_v2_entity_types": {
+      "options": {
+        "sensor": "Czujnik",
+        "binary_sensor": "Czujnik binarny"
+      }
+    },
+    "thermostat_editor": {
+      "fields": {
+        "cooling_enabled": {
+          "name": "Włącz chłodzenie"
+        },
+        "schedule_polling_enabled": {
+          "name": "Automatyczna synchronizacja harmonogramu"
+        },
+        "edit_schedule": {
+          "name": "Edytuj harmonogram tygodniowy"
+        },
+        "schedule_hint": {
+          "name": "Przypisz każdy dzień do jednej sekcji. Okres trwa do następnej godziny rozpoczęcia, a ostatni do północy. Temperatury podawane są w °C. Tryb Auto zachowuje bieżący kierunek grzania/chłodzenia."
+        },
+        "schedule_unavailable": {
+          "name": "Poczekaj na aktualny harmonogram i limity temperatur z CLU, a następnie ponownie otwórz konfigurację."
+        },
+        "cooling_unavailable": {
+          "name": "Chłodzenie wymaga powiązań odczytu i zapisu kierunku pracy termostatu."
+        },
+        "add_section": {
+          "name": "Dodaj sekcję"
+        },
+        "remove_section": {
+          "name": "Usuń sekcję"
+        },
+        "section": {
+          "name": "Sekcja"
+        },
+        "days": {
+          "name": "Dni"
+        },
+        "weekdays": {
+          "name": "Poniedziałek–piątek"
+        },
+        "weekend": {
+          "name": "Sobota–niedziela"
+        },
+        "all": {
+          "name": "Codziennie"
+        },
+        "custom": {
+          "name": "Wybrane dni"
+        },
+        "monday": {
+          "name": "Poniedziałek"
+        },
+        "tuesday": {
+          "name": "Wtorek"
+        },
+        "wednesday": {
+          "name": "Środa"
+        },
+        "thursday": {
+          "name": "Czwartek"
+        },
+        "friday": {
+          "name": "Piątek"
+        },
+        "saturday": {
+          "name": "Sobota"
+        },
+        "sunday": {
+          "name": "Niedziela"
+        },
+        "day_conflict": {
+          "name": "Wybierz co najmniej jeden dzień w sekcji. Każdy dzień może należeć tylko do jednej sekcji."
+        },
+        "start_time": {
+          "name": "Godzina rozpoczęcia"
+        },
+        "temperature": {
+          "name": "Temperatura (°C)"
+        },
+        "remove_period": {
+          "name": "Usuń okres"
+        },
+        "add_period": {
+          "name": "Dodaj okres"
+        },
+        "control_direction": {
+          "name": "Kierunek pracy (zachowuje tryb ręczny/harmonogram)"
+        },
+        "unchanged": {
+          "name": "Zachowaj bieżący kierunek"
+        },
+        "heating": {
+          "name": "Grzanie"
+        },
+        "cooling": {
+          "name": "Chłodzenie"
+        },
+        "current_direction": {
+          "name": "Bieżący kierunek"
+        },
+        "edit_limits": {
+          "name": "Edytuj limity temperatury"
+        },
+        "minimum": {
+          "name": "Temperatura minimalna (°C)"
+        },
+        "maximum": {
+          "name": "Temperatura maksymalna (°C)"
+        },
+        "limits_hint": {
+          "name": "Zmiana zakresu zachowuje temperatury harmonogramu. Wszystkie temperatury muszą mieścić się w nowych limitach; w razie potrzeby edytuj harmonogram poniżej."
+        },
+        "hour": {
+          "name": "Godzina"
+        },
+        "minute": {
+          "name": "Minuta"
+        }
+      }
+    },
+    "sensor_units": {
+      "options": {
+        "none": "Brak"
+      }
+    },
+    "value_read_modes": {
+      "options": {
+        "realtime": "W czasie rzeczywistym",
+        "slow": "Interwałowo"
+      }
+    },
+    "entity_picker": {
+      "fields": {
+        "entity_type": "Typ encji",
+        "entity": "Encja"
+      },
+      "types": {
+        "all": "Wszystkie encje",
+        "sensor": "Czujniki",
+        "binary_sensor": "Czujniki binarne",
+        "switch": "Przełączniki",
+        "light": "Światła",
+        "button": "Przyciski",
+        "number": "Liczby",
+        "cover": "Osłony",
+        "camera": "Kamery",
+        "climate": "Termostaty"
       }
     },
     "manual_kind": {

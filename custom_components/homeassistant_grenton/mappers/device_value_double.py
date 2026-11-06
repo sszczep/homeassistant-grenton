@@ -3,7 +3,7 @@
 from ..coordinator import GrentonCoordinator
 from ..domain.devices.value_double import GrentonDeviceValueDouble
 from ..domain.state_object import GrentonStateObject
-from ..domain.entities.value import GrentonEntityValue
+from ..domain.entities.value_v2 import value_v2_entity
 from ..dto.widgets.value_double import GrentonWidgetValueDoubleDto
 
 
@@ -19,21 +19,15 @@ class DeviceValueDoubleMapper:
             entities=[],
         )
         
-        entity_left = GrentonEntityValue(
-            coordinator=coordinator,
-            id=f"{dto.id}_0",
-            label=dto.componentLeft.label,
-            state_object=GrentonStateObject.from_dto(dto.componentLeft.object.value),
-            device_info=device.device_info,
-        )
-
-        entity_right = GrentonEntityValue(
-            coordinator=coordinator,
-            id=f"{dto.id}_1",
-            label=dto.componentRight.label,
-            state_object=GrentonStateObject.from_dto(dto.componentRight.object.value),
-            device_info=device.device_info,
-        )
-
-        device.entities = [entity_left, entity_right]
+        device.entities = [
+            value_v2_entity(
+                coordinator=coordinator,
+                id=f"{dto.id}_{index}",
+                label=component.label,
+                state_object=GrentonStateObject.from_dto(component.object.value),
+                value_type=component.valueType,
+                device_info=device.device_info,
+            )
+            for index, component in enumerate((dto.componentLeft, dto.componentRight))
+        ]
         return device

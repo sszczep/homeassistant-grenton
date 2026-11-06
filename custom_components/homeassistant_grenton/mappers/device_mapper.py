@@ -17,8 +17,9 @@ from ..dto.widgets.roller_shutter import GrentonWidgetRollerShutterDto
 from ..dto.widgets.roller_shutter_v3 import GrentonWidgetRollerShutterV3Dto
 from ..dto.widgets.camera import GrentonWidgetCameraDto
 from ..dto.widgets.scene import GrentonWidgetSceneDto
+from ..dto.widgets.thermostat_v2 import GrentonWidgetThermostatV2Dto
 from ..dto.mobile_interface import GrentonMobileInterfaceDto
-from ..naming import resolve_device_name, resolve_page_area
+from ..naming import resolve_page_area
 
 from .device_value_v2 import DeviceValueV2Mapper
 from .device_value_double import DeviceValueDoubleMapper
@@ -34,6 +35,7 @@ from .device_roller_shutter import DeviceRollerShutterMapper
 from .device_roller_shutter_v3 import DeviceRollerShutterV3Mapper
 from .device_camera import DeviceCameraMapper
 from .device_scene import DeviceSceneMapper
+from .device_thermostat_v2 import DeviceThermostatV2Mapper
 
 
 class DeviceMapper:
@@ -41,6 +43,18 @@ class DeviceMapper:
 
     @staticmethod
     def to_domain(dto: GrentonWidgetUnionDto, coordinator: GrentonCoordinator) -> BaseGrentonDevice:
+        """Map all entities before assigning their shared descriptive device name."""
+        device = DeviceMapper._map_device(dto, coordinator)
+        for entity in device.entities:
+            if info := entity.device_info:
+                info["name"] = device.name
+            # HA uses the device name for its sole/main entity without repeating
+            # the label. Multi-entity widgets retain individual entity labels.
+            entity._use_device_name = len(device.entities) == 1
+        return device
+
+    @staticmethod
+    def _map_device(dto: GrentonWidgetUnionDto, coordinator: GrentonCoordinator) -> BaseGrentonDevice:
         """Convert widget DTO to domain device using appropriate mapper."""
         if isinstance(dto, GrentonWidgetValueV2Dto):
             return DeviceValueV2Mapper.to_domain(dto, coordinator)
@@ -68,6 +82,8 @@ class DeviceMapper:
             return DeviceRollerShutterV3Mapper.to_domain(dto, coordinator)
         if isinstance(dto, GrentonWidgetCameraDto):
             return DeviceCameraMapper.to_domain(dto, coordinator)
+        if isinstance(dto, GrentonWidgetThermostatV2Dto):
+            return DeviceThermostatV2Mapper.to_domain(dto, coordinator)
         if isinstance(dto, GrentonWidgetSceneDto): # type: ignore
             return DeviceSceneMapper.to_domain(dto, coordinator)
 
@@ -86,6 +102,7 @@ class DeviceMapper:
             area = resolve_page_area(page.name, page_areas)
             for widget in page.widgets:
                 device = DeviceMapper.to_domain(widget, coordinator)
-                device.apply_naming(resolve_device_name(widget, device_names), area)
+                # Only an explicit override replaces the label-based default name
+                device.apply_naming((device_names or {}).get(widget.id), area)
                 devices.append(device)
         return devices

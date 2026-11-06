@@ -46,14 +46,15 @@ async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: Grenton
     if runtime is not None:
         coordinator = runtime.coordinator
         for clu in coordinator.clus:
-            last_seen = coordinator.last_seen.get(clu.id)
+            health = coordinator.connection_health.get(clu.id)
             clus.append({
                 "id": clu.id,
                 "name": clu.name,
                 "ip": clu.ip,
                 "port": clu.port,
-                "available": coordinator.is_clu_available(clu.id),
-                "last_seen": last_seen.isoformat() if last_seen else None,
+                "connected": health.connected if health else None,
+                "last_seen": health.last_seen.isoformat() if health and health.last_seen else None,
+                "request_timeouts": health.request_timeouts if health else None,
             })
         for device in runtime.devices:
             devices.append({

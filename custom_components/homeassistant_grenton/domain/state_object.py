@@ -10,6 +10,22 @@ class GrentonStateObject(ABC):
     object_name: str
     index: str
 
+    @property
+    def source_attributes(self) -> dict[str, str]:
+        """Describe the read target without exposing mutable source objects."""
+        if isinstance(self, GrentonVariableValueObject):
+            return {
+                "call_type": "VARIABLE",
+                "clu_id": self.clu_id,
+                "variable_name": self.index,
+            }
+        return {
+            "call_type": "ATTRIBUTE",
+            "clu_id": self.clu_id,
+            "object_name": self.object_name,
+            "index": self.index,
+        }
+
     @staticmethod
     def from_dto(dto: GrentonValueUnionDto) -> "GrentonStateObject":
         if isinstance(dto, GrentonValueAttributeDto):

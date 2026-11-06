@@ -1,3 +1,18 @@
+set_thermostat_schedule:
+  name: Set thermostat schedule
+  description: Replace the complete weekly thermostat schedule using its configured temperature limits. Preserves power, mode, heating/cooling direction, and schedule metadata.
+  target:
+    entity:
+      integration: grenton
+      domain: climate
+  fields:
+    schedule:
+      name: Weekly schedule
+      description: All seven lowercase English weekday names, each with a list of time and temperature pairs. Start each day at 00:00, use 15-minute time boundaries and 0.5°C temperature increments.
+      required: true
+      selector:
+        object:
+
 run_scene:
   name: Run scene
   description: Run a Grenton SCENE script, optionally passing a parameter.
@@ -10,9 +25,40 @@ run_scene:
       name: Parameter
       description: >
         Optional parameter passed verbatim into the script call. Use Lua syntax
-        (e.g. quoted "abc" for a string, 42 for a number). Leave empty to run
-        with the default value defined in the scene widget.
+        (e.g. quoted "abc" for a string, 42 for a number). Omit this field to use
+        the scene's saved arguments/value. An empty string calls without arguments.
       example: "\"123\""
       required: false
       selector:
         text:
+
+run_script:
+  name: Run script
+  description: Run a named Grenton script directly on a discovered CLU.
+  target:
+    entity:
+      integration: grenton
+      domain: sensor
+    device:
+      integration: grenton
+      manufacturer: Grenton
+      model: CLU
+  fields:
+    script:
+      name: Script
+      description: Name of the script on the selected CLU, without parentheses or arguments.
+      example: Actions
+      required: true
+      selector:
+        text:
+    arguments:
+      name: Typed arguments
+      description: Positional arguments. Add, edit, remove, or reorder rows. Omit trailing arguments to use the script's defaults; omit this field or use an empty list to call without arguments.
+      example:
+        - type: string
+          value: lightOffice
+        - type: number
+          value: -1
+      required: false
+      selector:
+        grenton_arguments: {}

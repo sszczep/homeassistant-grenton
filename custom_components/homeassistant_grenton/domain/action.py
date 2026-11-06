@@ -1,5 +1,5 @@
 from abc import ABC
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from .enums import GrentonActionEventType
 
@@ -28,6 +28,8 @@ class GrentonAction(ABC):
 @dataclass
 class GrentonActionAttribute(GrentonAction):
     index: str
+    # Built-in settings such as UseCloud require a typed Lua boolean.
+    lua_value: str | None = field(default=None, kw_only=True)
 
     @staticmethod
     def create(dto: GrentonActionAttributeDto) -> "GrentonActionAttribute":
@@ -42,6 +44,8 @@ class GrentonActionAttribute(GrentonAction):
 @dataclass
 class GrentonActionVariable(GrentonAction):
     index: str
+    # Typed built-in variables can use a Lua literal instead of a quoted string.
+    lua_value: str | None = field(default=None, kw_only=True)
 
     @staticmethod
     def create(dto: GrentonActionVariableDto) -> "GrentonActionVariable":
@@ -56,6 +60,9 @@ class GrentonActionVariable(GrentonAction):
 @dataclass
 class GrentonActionMethod(GrentonAction):
     index: str
+    # None preserves imported/mobile-interface calls using one quoted value.
+    # A tuple contains explicitly configured Lua arguments, including no args.
+    arguments: tuple[str, ...] | None = field(default=None, kw_only=True)
 
     @staticmethod
     def create(dto: GrentonActionMethodDto) -> "GrentonActionMethod":
@@ -79,6 +86,7 @@ class GrentonActionScript(GrentonAction):
             value=dto.value,
         )
 
+
 def _is_number(value: str) -> bool:
     try:
         float(value)
@@ -97,15 +105,14 @@ class GrentonActionMethodNumeric(GrentonActionMethod):
     """Method action whose numeric value is sent unquoted (obj:execute(i, 1))."""
 
 
-def lua_value(action: GrentonAction) -> str:
-    """Lua literal for an action value.
+def numeric_lua_literal(action: GrentonAction) -> str | None:
+    """Unquoted Lua number for actions of manually added objects, else None.
 
-    Interface-provided actions keep the original quoted form; actions built
-    for manually added objects pass numbers as Lua numbers.
+    Interface-provided actions keep the original quoted form.
     """
-    numeric = isinstance(action, (GrentonActionAttributeNumeric, GrentonActionMethodNumeric))
-    if numeric and _is_number(action.value):
-        number = float(action.value)
-        return str(int(number)) if number.is_integer() else repr(number)
-    escaped = str(action.value).replace("\\", "\\\\").replace('"', '\\"')
-    return f'"{escaped}"'
+    if not isinstance(action, (GrentonActionAttributeNumeric, GrentonActionMethodNumeric)):
+        return None
+    if not _is_number(action.value):
+        return None
+    number = float(action.value)
+    return str(int(number)) if number.is_integer() else repr(number)

@@ -6,6 +6,7 @@ class GrentonUnit(str, Enum):
     DEGREE = "DEGREE"
 
 class GrentonValueType(str, Enum):
+    BOOLEAN = "BOOLEAN"
     STRING = "STRING"
     FLOAT = "FLOAT"
     INTEGER = "INTEGER"

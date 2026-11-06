@@ -22,4 +22,8 @@ async def async_setup_entry(
             if isinstance(entity, (SwitchEntity)):
                 entities.append(entity)
 
+    entities.extend(
+        entity for entity in config_entry.runtime_data.clu_entities
+        if isinstance(entity, SwitchEntity)
+    )
     async_add_entities(entities)

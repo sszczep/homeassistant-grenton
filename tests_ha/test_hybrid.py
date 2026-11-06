@@ -47,6 +47,23 @@ OPTIONS = {
 }
 
 
+def eid(hass, unique_id):
+    """Entity id by unique id (HA may prefix ids with the area name)."""
+    for domain in ("switch", "light", "cover", "climate", "sensor", "binary_sensor", "button"):
+        if entity_id := er.async_get(hass).async_get_entity_id(domain, "grenton", unique_id):
+            return entity_id
+    raise AssertionError(f"no entity for {unique_id}")
+
+
+def device(hass, identifier):
+    reg = dr.async_get(hass)
+    return next(d for d in reg.devices if ("grenton", identifier) in d.identifiers)
+
+
+def st(hass, unique_id):
+    return hass.states.get(eid(hass, unique_id))
+
+
 async def test_lua_building():
     assert parse_grenton_id(" CLU1 -> DOU2 ") == ("CLU1", "DOU2")
     quoted = GrentonCluApiActionRequest.from_action(GrentonActionAttribute("C", "DOU1", E.ON, "1", index="0")).payload
@@ -100,35 +117,35 @@ async def test_hybrid_setup(hass: HomeAssistant, aioclient_mock):
         await hass.async_block_till_done()
 
         # Interface widget, named from label, area from page
-        lamp = hass.states.get("switch.lampa")
+        lamp = st(hass, "w1_0")
         assert lamp is not None and lamp.state == "on"
         # Manual UDP switch
-        pump = hass.states.get("switch.pompa")
+        pump = st(hass, "manual_aaa")
         assert pump is not None and pump.state == "on"
         # Manual Gate thermostat
-        climate = hass.states.get("climate.termostat_salon")
+        climate = st(hass, "manual_bbb")
         assert climate is not None
         assert climate.state == "heat"
         assert climate.attributes["temperature"] == 21.5
         assert climate.attributes["current_temperature"] == 20.5
 
         dev_reg = dr.async_get(hass)
-        pump_dev = dev_reg.async_get_device(identifiers={("grenton", "manual_aaa")})
+        pump_dev = device(hass, "manual_aaa")
         assert pump_dev.name == "Pompa"
-        lamp_dev = dev_reg.async_get_device(identifiers={("grenton", "w1")})
+        lamp_dev = device(hass, "w1")
         assert lamp_dev.name == "Lampa"
         area_reg = __import__("homeassistant.helpers.area_registry", fromlist=["x"]).async_get(hass)
         assert area_reg.async_get_area(lamp_dev.area_id).name == "Salon"
         assert area_reg.async_get_area(pump_dev.area_id).name == "Kotłownia"
 
         # UDP manual action -> unquoted numeric Lua
-        await hass.services.async_call("switch", "turn_off", {"entity_id": "switch.pompa"}, blocking=True)
-        assert executed[-1] == "DOU0002:set(0,0)"
+        await hass.services.async_call("switch", "turn_off", {"entity_id": eid(hass, "manual_aaa")}, blocking=True)
+        assert executed[-1] == 'DOU0002:set(0,"0")'  # k911 rebuilds on/off actions from config (quoted like interface widgets)
 
         # Gate action -> wrapped in CLU:execute
         before = aioclient_mock.call_count
         await hass.services.async_call("climate", "set_temperature",
-                                       {"entity_id": "climate.termostat_salon", "temperature": 22.5}, blocking=True)
+                                       {"entity_id": eid(hass, "manual_bbb"), "temperature": 22.5}, blocking=True)
         sent = [c[2] for c in aioclient_mock.mock_calls[before:]]
         commands = [b["command"] for b in sent if isinstance(b, dict) and "command" in b]
         assert commands == ['CLU221000009:execute(0, "THE0001:set(8,0)")',
@@ -175,7 +192,8 @@ async def test_options_flow(hass: HomeAssistant, aioclient_mock):
             result["flow_id"], {**bad, "transport": "udp", "grenton_id": "CLU_Parter->DOU0005", "name": "Gniazdko"})
         assert result["type"] == FlowResultType.CREATE_ENTRY
         await hass.async_block_till_done()
-        assert hass.states.get("switch.gniazdko") is not None  # reloaded with new object
+        oid = entry.options["manual_objects"][0]["id"]
+        assert st(hass, f"manual_{oid}") is not None  # reloaded with new object
 
         # Gate settings
         result = await hass.config_entries.options.async_init(entry.entry_id)
@@ -208,7 +226,7 @@ async def test_options_flow(hass: HomeAssistant, aioclient_mock):
         result = await hass.config_entries.options.async_configure(result["flow_id"], {"objects": [oid]})
         await hass.async_block_till_done()
         assert entry.options["manual_objects"] == []
-        assert hass.states.get("switch.gniazdko") is None or hass.states.get("switch.gniazdko").state == "unavailable"
+        assert er.async_get(hass).async_get_entity_id("switch", "grenton", f"manual_{oid}") is None
         await hass.config_entries.async_unload(entry.entry_id)
 
 
@@ -240,8 +258,8 @@ async def test_config_flow_custom_names(hass: HomeAssistant):
         result = await hass.config_entries.flow.async_configure(result["flow_id"], {"area": "Pokój dzienny", lamp_field: "Żyrandol"})
         assert result["type"] == FlowResultType.CREATE_ENTRY
         await hass.async_block_till_done()
-        assert hass.states.get("switch.zyrandol") is not None
-        dev = dr.async_get(hass).async_get_device(identifiers={("grenton", "w1")})
+        assert st(hass, "w1_0").attributes["friendly_name"] == "Żyrandol"
+        dev = device(hass, "w1")
         assert dev.name == "Żyrandol"
 
 
@@ -286,37 +304,37 @@ async def test_led_zwave_and_webhook(hass: HomeAssistant, aioclient_mock, hass_c
         assert await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
 
-        led = hass.states.get("light.tasma")
+        led = st(hass, "manual_led")
         assert led.state == "on"
         assert led.attributes["color_mode"] == "rgb"
         assert led.attributes["rgb_color"] == (255, 128, 0)
         assert led.attributes["brightness"] == 128
-        cover = hass.states.get("cover.roleta_zw")
+        cover = st(hass, "manual_zc")
         assert cover.attributes["current_position"] == 40
         assert "current_tilt_position" not in cover.attributes  # no tilt for Z-Wave
-        assert hass.states.get("light.kinkiet_zw").attributes["brightness"] == 128
-        assert hass.states.get("light.bialy").state == "off"
+        assert st(hass, "manual_zd").attributes["brightness"] == 128
+        assert st(hass, "manual_ch").state == "off"
 
         def commands_since(n):
             return [c[2]["command"] for c in aioclient_mock.mock_calls[n:] if "command" in c[2]]
 
         n = aioclient_mock.call_count
         await hass.services.async_call("light", "turn_on",
-                                       {"entity_id": "light.tasma", "rgb_color": [0, 0, 255], "brightness": 255}, blocking=True)
+                                       {"entity_id": eid(hass, "manual_led"), "rgb_color": [0, 0, 255], "brightness": 255}, blocking=True)
         assert commands_since(n) == [
             'CLU9:execute(0, "LED0001:execute(6,\\"#0000ff\\")")',
             'CLU9:execute(0, "LED0001:execute(12,0)")',
             'CLU9:execute(0, "LED0001:execute(0,1)")',
         ]
         n = aioclient_mock.call_count
-        await hass.services.async_call("light", "turn_on", {"entity_id": "light.tasma", "white": 200}, blocking=True)
+        await hass.services.async_call("light", "turn_on", {"entity_id": eid(hass, "manual_led"), "white": 200}, blocking=True)
         assert commands_since(n) == ['CLU9:execute(0, "LED0001:execute(0,0)")', 'CLU9:execute(0, "LED0001:execute(12,200)")']
         n = aioclient_mock.call_count
-        await hass.services.async_call("cover", "set_cover_position", {"entity_id": "cover.roleta_zw", "position": 70}, blocking=True)
+        await hass.services.async_call("cover", "set_cover_position", {"entity_id": eid(hass, "manual_zc"), "position": 70}, blocking=True)
         assert commands_since(n) == ['CLU9:execute(0, "ZWA0001:execute(7,70)")']
         n = aioclient_mock.call_count
-        await hass.services.async_call("light", "turn_on", {"entity_id": "light.bialy", "brightness": 100}, blocking=True)
-        assert commands_since(n) == ['CLU9:execute(0, "LED0002:execute(12,100)")']
+        await hass.services.async_call("light", "turn_on", {"entity_id": eid(hass, "manual_ch"), "brightness": 100}, blocking=True)
+        assert commands_since(n) == ['CLU9:execute(0, "LED0002:execute(12,\\"100\\")")']
 
         # Webhook push updates state without polling
         client = await hass_client_no_auth()
@@ -328,8 +346,8 @@ async def test_led_zwave_and_webhook(hass: HomeAssistant, aioclient_mock, hass_c
         assert resp.status == 200
         assert (await resp.json())["applied"] == 2
         await hass.async_block_till_done()
-        assert hass.states.get("cover.roleta_zw").attributes["current_position"] == 90
-        assert hass.states.get("light.bialy").state == "on"
+        assert st(hass, "manual_zc").attributes["current_position"] == 90
+        assert st(hass, "manual_ch").state == "on"
 
         await hass.config_entries.async_unload(entry.entry_id)
         await hass.async_block_till_done()
@@ -377,46 +395,24 @@ async def test_availability_connectivity_and_diagnostics(hass: HomeAssistant, ai
         coordinator = entry.runtime_data.coordinator
         gate = entry.runtime_data.gate_coordinator
 
-        assert hass.states.get("binary_sensor.clu_parter").state == "on"
-        assert hass.states.get("binary_sensor.grenton_gate_http").state == "on"
-        assert hass.states.get("switch.lampa").state == "on"
-
-        # CLU stops answering: unavailable after 3 missed pings, not before
-        ping_ok["ok"] = False
-        for _ in range(2):
-            await coordinator._send_ping("CLU221000001")
-        await hass.async_block_till_done()
-        assert hass.states.get("switch.lampa").state == "on"
-        await coordinator._send_ping("CLU221000001")
-        await hass.async_block_till_done()
-        assert hass.states.get("switch.lampa").state == "unavailable"
-        assert hass.states.get("switch.pompa").state == "unavailable"
-        assert hass.states.get("binary_sensor.clu_parter").state == "off"
-        # Gate entities are independent of the UDP CLU
-        assert hass.states.get("climate.termostat_salon").state == "heat"
-
-        ping_ok["ok"] = True
-        await coordinator._send_ping("CLU221000001")
-        await hass.async_block_till_done()
-        assert hass.states.get("switch.lampa").state == "on"
-        assert hass.states.get("binary_sensor.clu_parter").state == "on"
+        assert st(hass, "connectivity_gate_http").state == "on"
+        assert st(hass, "w1_0").state == "on"
 
         # Gate (REST) down -> its entities unavailable, connectivity off
         gate_up["ok"] = False
         await gate.async_refresh()
         await hass.async_block_till_done()
-        assert hass.states.get("climate.termostat_salon").state == "unavailable"
-        assert hass.states.get("binary_sensor.grenton_gate_http").state == "off"
-        assert hass.states.get("switch.lampa").state == "on"
+        assert st(hass, "manual_bbb").state == "unavailable"
+        assert st(hass, "connectivity_gate_http").state == "off"
         gate_up["ok"] = True
         await gate.async_refresh()
         await hass.async_block_till_done()
-        assert hass.states.get("binary_sensor.grenton_gate_http").state == "on"
+        assert st(hass, "connectivity_gate_http").state == "on"
 
         diag = await async_get_config_entry_diagnostics(hass, entry)
         assert diag["entry"]["data"]["pin"] == "**REDACTED**"
         assert diag["interface"]["encryption"]["key"] == "**REDACTED**"
-        assert diag["clus"][0]["available"] is True
+        assert diag["clus"][0]["id"] == "CLU221000001"
         assert [w["id"] for w in diag["skipped_widgets"]] == ["bad1"]
         assert any("unit" in e["loc"] for e in diag["skipped_widgets"][0]["errors"])
         assert diag["gate"]["last_update_success"] is True

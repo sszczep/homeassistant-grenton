@@ -1,8 +1,8 @@
 import logging
 
+from homeassistant.components.sensor import SensorEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.components.sensor import SensorEntity
 
 from . import GrentonConfigEntry
 
@@ -22,4 +22,8 @@ async def async_setup_entry(
             if isinstance(entity, (SensorEntity)):
                 entities.append(entity)
 
+    entities.extend(
+        entity for entity in config_entry.runtime_data.clu_entities
+        if isinstance(entity, SensorEntity)
+    )
     async_add_entities(entities)
