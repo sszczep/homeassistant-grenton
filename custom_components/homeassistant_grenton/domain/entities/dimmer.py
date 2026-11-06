@@ -10,6 +10,7 @@ from ...coordinator import GrentonCoordinator
 from homeassistant.helpers.device_registry import DeviceInfo
 
 from ..utils.ranges import map_range
+from ..utils.values import format_action_value
 
 class GrentonEntityDimmer(BaseGrentonEntity, LightEntity): # pyright: ignore[reportIncompatibleVariableOverride]
     """Dimmer light entity."""
@@ -41,7 +42,8 @@ class GrentonEntityDimmer(BaseGrentonEntity, LightEntity): # pyright: ignore[rep
         self.action_on = action_on
         self.action_off = action_off
         self.action_set_value = action_set_value
-        
+        self._last_brightness: int | None = None
+
         # Register state with coordinator
         coordinator.register_component_state(state_object)
 
@@ -64,16 +66,24 @@ class GrentonEntityDimmer(BaseGrentonEntity, LightEntity): # pyright: ignore[rep
         return int(map_range((self.min, self.max), (0, 255), value))
 
     async def async_turn_on(self, **kwargs: Any):
-        """Turn the light on."""
+        """Turn the light on.
+
+        On/off is driven through the set-value action instead of the dedicated
+        on/off actions. Those carry a multi-argument payload (e.g. "255,1000")
+        which the action serializer wraps as a single quoted string, so the CLU
+        ignores them. Setting the value directly works for every channel.
+        """
         if ATTR_BRIGHTNESS in kwargs:
-            # Convert from HA range (0-255) to device range
             brightness: int = kwargs[ATTR_BRIGHTNESS]
-            device_value = map_range((0, 255), (self.min, self.max), brightness)
-            self.action_set_value.value = str(round(device_value, self.precision))
-            await self.coordinator.execute_action(self.action_set_value)
         else:
-            await self.coordinator.execute_action(self.action_on)
+            brightness = self._last_brightness or 255
+        # Convert from HA range (0-255) to device range
+        device_value = map_range((0, 255), (self.min, self.max), brightness)
+        self.action_set_value.value = format_action_value(device_value, self.precision)
+        await self.coordinator.execute_action(self.action_set_value)
+        self._last_brightness = brightness
 
     async def async_turn_off(self, **kwargs: Any):
-        """Turn the light off."""
-        await self.coordinator.execute_action(self.action_off)
+        """Turn the light off by setting its value to the minimum."""
+        self.action_set_value.value = format_action_value(self.min, self.precision)
+        await self.coordinator.execute_action(self.action_set_value)

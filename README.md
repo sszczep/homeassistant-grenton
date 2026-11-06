@@ -88,6 +88,90 @@ After initial setup, you can customize individual entities:
 
 The integration intelligently filters available options based on your selections and automatically skips unnecessary configuration steps.
 
+### Custom names and areas
+
+During setup (and reconfiguration) you can tick **Customize names and areas**.
+You then get one form per interface page: the page becomes the suggested area
+and every widget gets a name field prefilled from its label.
+
+### Manually added objects (UDP or Gate HTTP)
+
+Objects that are not widgets in the myGrenton interface can be added in
+**Configure → Add object manually** using the `CLU->OBJECT` identifier
+(e.g. `CLU221001234->DOU5678`, `CLU221001234->myScript` for a button,
+`CLU221001234->myFeature` for a user feature/variable).
+
+Supported kinds: switch / on-off light (DOUT), dimmer (DIMMER), LED RGB,
+LED RGBW, single LED channel (R/G/B/W), roller shutter, thermostat
+(THERMOSTAT → climate), sensor, binary sensor, script button. Z-Wave objects
+(`ZWA…`) are detected by name and use their own indexes (dimmer, LED colour,
+roller shutter without tilt).
+
+Each object chooses its connection:
+
+| Connection | Requirements | State updates |
+|---|---|---|
+| **UDP** | CLU present in the imported interface | instant (CLU subscription) |
+| **Gate HTTP** | GATE HTTP module + HttpListener below | polling (Gate settings) |
+
+#### Connection status
+
+Every CLU and the Gate HTTP get a diagnostic **connectivity** binary sensor
+(e.g. `binary_sensor.<clu_name>`, `binary_sensor.grenton_gate_http`). A CLU is
+offline after 3 missed pings (~15 s) and before it first answers after a HA
+restart; the Gate is offline when a poll fails. Entities of an offline CLU or
+Gate become `unavailable`. Useful e.g. in Node-RED to restore states after a
+power failure.
+
+#### Diagnostics
+
+**Settings → Devices & services → Grenton → ⋮ → Download diagnostics** gives the
+interface JSON (PIN and encryption keys redacted), the exact validation error
+of every skipped widget, CLU status and manual objects – attach it to issues.
+
+#### Gate HTTP setup
+
+1. On the Gate create an `HttpListener` virtual object named
+   `HA_Integration_Listener`, path `/HAlistener`, ResponseType `JSON`.
+2. Attach a script to its `OnRequest` event that evaluates each JSON value as
+   Lua and returns the results under the same keys, plus `g_status = "OK"`.
+   The format is compatible with the listener used by
+   [Grenton Objects](https://github.com/jnalepka/grenton-objects-home-assistant),
+   so an existing listener can be reused as is.
+3. In **Configure → Gate HTTP settings** enter the listener URL,
+   e.g. `http://192.168.1.50/HAlistener`.
+
+#### Instant updates from the Gate (webhook)
+
+Polling works out of the box. For instant state changes enable
+**Receive changes from the Gate via webhook** in the Gate settings; the form
+then shows the webhook URL (`http://<HA>:8123/api/webhook/<id>`, LAN only).
+The Gate sends a JSON `POST` with one update or a list of them:
+
+```json
+{"clu": "CLU221001234", "object": "DOU5678", "index": 0, "value": 1}
+[{"id": "CLU221001234->THE0001", "index": 12, "value": 21.5},
+ {"clu": "CLU221001234", "variable": "trybDomu", "value": 2}]
+```
+
+Example on the Gate: an `HttpRequest` virtual object `HA_Webhook`
+(Host `http://<HA>:8123`, Path `/api/webhook/<id>`, Method `POST`,
+RequestType/ResponseType `JSON`) and a script `HA_Push(clu, object, index, value)`:
+
+```lua
+GATE_HTTP->HA_Webhook->SetRequestBody({clu = clu, object = object, index = index, value = value})
+GATE_HTTP->HA_Webhook->SendRequest()
+```
+
+Call it from the object's `OnValueChange` event, e.g.
+`GATE_HTTP->HA_Push("CLU221001234", "DOU5678", 0, CLU221001234->DOU5678->Value)`.
+An `HttpRequest` sends one request at a time, so events that arrive while it
+is busy can be lost; polling stays active as a fallback (a long interval such
+as 300 s is enough).
+
+> ⚠️ Such a listener executes any Lua it receives, without authentication.
+> Keep the Gate in a trusted network segment and never expose it to the internet.
+
 ## 🎨 Device Classes & Units
 
 ### Sensor Device Classes

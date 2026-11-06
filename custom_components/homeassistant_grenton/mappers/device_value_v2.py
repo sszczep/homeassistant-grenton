@@ -24,6 +24,7 @@ class DeviceValueV2Mapper:
             id=f"{dto.id}_0",
             label=dto.label,
             state_object=GrentonStateObject.from_dto(dto.object.value),
+            value_type=dto.valueType,
             device_info=device.device_info,
         )
         

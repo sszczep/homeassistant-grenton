@@ -97,12 +97,61 @@
         "data": {
           "device_class": "Device Class"
         }
+      },
+      "init": {
+        "title": "Grenton options",
+        "menu_options": {
+          "entity_list": "Configure entities",
+          "add_object": "Add object manually",
+          "remove_object": "Remove manual objects",
+          "gate_settings": "Gate HTTP settings"
+        }
+      },
+      "add_object": {
+        "title": "Add Grenton object",
+        "description": "Identifier in CLU->OBJECT format, e.g. CLU221001234->DOU5678 (button: CLU->scriptName, variable: CLU->featureName). UDP works for CLUs in the myGrenton interface and updates instantly; Gate HTTP needs the configured listener and polls periodically. Z-Wave objects (ZWA…) are detected automatically.",
+        "data": {
+          "kind": "Type",
+          "name": "Name",
+          "grenton_id": "Grenton identifier",
+          "transport": "Connection",
+          "area": "Area (optional)",
+          "index": "Feature index (sensors)",
+          "variable": "User variable/feature instead of object feature (sensors)",
+          "reversed": "Invert state (binary sensor)",
+          "tilt": "Slats (cover)",
+          "channel": "Channel (single-channel LED)"
+        }
+      },
+      "remove_object": {
+        "title": "Remove manual objects",
+        "data": {
+          "objects": "Objects to remove"
+        }
+      },
+      "gate_settings": {
+        "title": "Gate HTTP",
+        "description": "URL of the HA_Integration_Listener, e.g. http://192.168.1.50/HAlistener. Leave empty to disable the Gate.\n\nWebhook for changes pushed by the Gate (after saving with the option enabled): {webhook_url}",
+        "data": {
+          "url": "Listener URL",
+          "scan_interval": "Polling interval (s)",
+          "push": "Receive changes from the Gate via webhook"
+        },
+        "data_description": {
+          "scan_interval": "With the webhook enabled, polling is only a fallback – a longer interval such as 300 s is fine."
+        }
       }
     },
     "abort": {
       "no_configurable_entities": "No configurable entities found.",
       "entity_not_found": "Selected entity not found.",
       "entity_not_configurable": "This entity cannot be configured."
+    },
+    "error": {
+      "invalid_grenton_id": "Invalid identifier. Use CLU->OBJECT format.",
+      "clu_not_in_interface": "This CLU is not in the myGrenton interface. Choose the Gate HTTP connection.",
+      "gate_not_configured": "Configure Gate HTTP in the options first.",
+      "cannot_connect_gate": "No response from the Gate HTTP listener at this URL."
     }
   },
   "services": {
@@ -331,6 +380,35 @@
         "weight": "Weight",
         "wind_direction": "Wind direction",
         "wind_speed": "Wind speed"
+      }
+    },
+    "manual_kind": {
+      "options": {
+        "switch": "Switch (DOUT)",
+        "light": "On/off light (DOUT)",
+        "dimmer": "Dimmer (DIMMER / Z-Wave)",
+        "cover": "Roller shutter (ROLLER_SHUTTER / Z-Wave)",
+        "climate": "Thermostat (THERMOSTAT)",
+        "sensor": "Sensor / value",
+        "binary_sensor": "Binary sensor (DIN)",
+        "button": "Button – script",
+        "led_rgb": "LED RGB",
+        "led_rgbw": "LED RGBW (colour + white)",
+        "led_channel": "LED single channel (R/G/B/W)"
+      }
+    },
+    "manual_transport": {
+      "options": {
+        "udp": "UDP (myGrenton interface)",
+        "gate": "Gate HTTP"
+      }
+    },
+    "led_channel": {
+      "options": {
+        "r": "Red (R)",
+        "g": "Green (G)",
+        "b": "Blue (B)",
+        "w": "White (W)"
       }
     }
   }

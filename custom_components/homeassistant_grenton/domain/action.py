@@ -78,3 +78,34 @@ class GrentonActionScript(GrentonAction):
             event=dto.event,
             value=dto.value,
         )
+
+def _is_number(value: str) -> bool:
+    try:
+        float(value)
+    except (TypeError, ValueError):
+        return False
+    return True
+
+
+@dataclass
+class GrentonActionAttributeNumeric(GrentonActionAttribute):
+    """Attribute action whose numeric value is sent unquoted (obj:set(i, 1))."""
+
+
+@dataclass
+class GrentonActionMethodNumeric(GrentonActionMethod):
+    """Method action whose numeric value is sent unquoted (obj:execute(i, 1))."""
+
+
+def lua_value(action: GrentonAction) -> str:
+    """Lua literal for an action value.
+
+    Interface-provided actions keep the original quoted form; actions built
+    for manually added objects pass numbers as Lua numbers.
+    """
+    numeric = isinstance(action, (GrentonActionAttributeNumeric, GrentonActionMethodNumeric))
+    if numeric and _is_number(action.value):
+        number = float(action.value)
+        return str(int(number)) if number.is_integer() else repr(number)
+    escaped = str(action.value).replace("\\", "\\\\").replace('"', '\\"')
+    return f'"{escaped}"'

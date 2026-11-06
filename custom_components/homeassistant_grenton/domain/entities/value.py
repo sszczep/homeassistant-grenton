@@ -3,7 +3,7 @@ from typing import Any, Dict
 
 import voluptuous as vol
 
-from homeassistant.components.sensor import SensorEntity, SensorDeviceClass
+from homeassistant.components.sensor import SensorEntity, SensorDeviceClass, SensorStateClass
 from homeassistant.components.sensor.const import DEVICE_CLASS_UNITS
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.const import CONF_UNIT_OF_MEASUREMENT
@@ -12,6 +12,7 @@ from homeassistant.helpers import selector
 from .base import BaseGrentonEntity
 from .configurable import ConfigurableEntity, BaseGrentonEntityConfigurationSchema, StepResult, StepDefinition
 from ..state_object import GrentonStateObject
+from ..enums import GrentonValueType
 from ...coordinator import GrentonCoordinator
 
 @dataclass
@@ -105,6 +106,7 @@ class GrentonEntityValue( # pyright: ignore[reportIncompatibleVariableOverride]
         id: str,
         label: str,
         state_object: GrentonStateObject,
+        value_type: GrentonValueType | None = None,
         device_info: DeviceInfo | None = None,
     ) -> None:
         """Initialize value sensor entity."""
@@ -113,13 +115,33 @@ class GrentonEntityValue( # pyright: ignore[reportIncompatibleVariableOverride]
         SensorEntity.__init__(self)
 
         self.state_object = state_object
+        self.value_type = value_type
         
         # Register state with coordinator
         coordinator.register_component_state(state_object)
 
     @property
     def native_value(self): # pyright: ignore[reportIncompatibleVariableOverride]
-        return self.coordinator.get_value_for_component(self.state_object)
+        value = self.coordinator.get_value_for_component(self.state_object)
+        if value is None:
+            return None
+        if self.value_type == GrentonValueType.FLOAT:
+            try:
+                return float(value)
+            except (ValueError, TypeError):
+                return value
+        if self.value_type == GrentonValueType.INTEGER:
+            try:
+                return int(float(value))
+            except (ValueError, TypeError):
+                return value
+        return value
+
+    @property
+    def state_class(self) -> SensorStateClass | None:  # pyright: ignore[reportIncompatibleVariableOverride]
+        if self.value_type in (GrentonValueType.FLOAT, GrentonValueType.INTEGER):
+            return SensorStateClass.MEASUREMENT
+        return None
 
     @property
     def device_class(self) -> SensorDeviceClass | None:  # pyright: ignore[reportIncompatibleVariableOverride]

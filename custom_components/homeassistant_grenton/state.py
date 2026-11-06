@@ -34,6 +34,18 @@ def cast_string_to_grenton_value(value: str) -> GrentonValue:
             return stripped_value
 
 
+def grenton_value_to_bool(value: GrentonValue) -> bool:
+    """Interpret a Grenton value as a boolean state.
+
+    CLUs report boolean-like states in several shapes: real booleans,
+    0/1 numbers, or textual tokens such as "ON"/"OFF". Plain bool()
+    would treat any non-empty string - including "OFF" - as True.
+    """
+    if isinstance(value, str):
+        return value.strip().upper() in ("ON", "TRUE", "1")
+    return bool(value)
+
+
 @dataclass(frozen=True)
 class GrentonCluStateVariableKey:
     """Key for identifying a CLU state variable."""
@@ -55,7 +67,7 @@ class GrentonCluStateVariable:
     
     def __init__(self, name: str, value: GrentonValue | None = None):
         self.name = name
-        self.value = value if value is not None else ""
+        self.value = value
 
 
 @dataclass
@@ -68,7 +80,7 @@ class GrentonCluStateAttribute:
     def __init__(self, object_name: str, name: str, value: GrentonValue | None = None):
         self.object_name = object_name
         self.name = name
-        self.value = value if value is not None else ""
+        self.value = value
     
     @property
     def key(self) -> GrentonCluStateAttributeKey:

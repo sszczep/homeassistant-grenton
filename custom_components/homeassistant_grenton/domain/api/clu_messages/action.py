@@ -6,6 +6,7 @@ from ...action import (
     GrentonActionAttribute,
     GrentonActionMethod,
     GrentonActionScript,
+    lua_value,
 )
 from .base import GrentonCluApiRequest, GrentonCluApiResponse
 
@@ -33,9 +34,9 @@ class GrentonCluApiActionRequest(GrentonCluApiRequest):
         if isinstance(action, GrentonActionVariable):
             payload = f'setVar("{action.index}","{action.value}")'
         elif isinstance(action, GrentonActionAttribute):
-            payload = f'{action.object_name}:set({action.index},"{action.value}")'
+            payload = f'{action.object_name}:set({action.index},{lua_value(action)})'
         elif isinstance(action, GrentonActionMethod):
-            payload = f'{action.object_name}:execute({action.index},"{action.value}")'
+            payload = f'{action.object_name}:execute({action.index},{lua_value(action)})'
         elif isinstance(action, GrentonActionScript):
             payload = f'{action.object_name}({action.value})'
         else:
