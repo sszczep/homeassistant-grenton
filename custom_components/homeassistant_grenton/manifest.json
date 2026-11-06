@@ -3,15 +3,12 @@
   "name": "Grenton",
   "version": "0.2.0",
   "codeowners": [
-    "@sszczep"
+    "@wirczur", "@k911"
   ],
-  "documentation": "https://github.com/sszczep/homeassistant-grenton",
-  "issue_tracker": "https://github.com/sszczep/homeassistant-grenton/issues",
-  "requirements": [
-    "pydantic>=2.12.2"
-  ],
-  "dependencies": [
-    "webhook"
-  ],
+  "documentation": "https://github.com/wirczur/homeassistant-grenton",
+  "issue_tracker": "https://github.com/wirczur/homeassistant-grenton/issues",
+  "requirements": ["pydantic>=2.12.2"],
+  "dependencies": ["webhook"],
+  "after_dependencies": ["frontend"],
   "config_flow": true
 }

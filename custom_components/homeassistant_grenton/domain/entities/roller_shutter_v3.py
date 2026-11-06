@@ -43,6 +43,11 @@ class GrentonEntityRollerShutterV3(BaseGrentonEntity, CoverEntity): # pyright: i
             coordinator.register_component_state(cover_tilt_position)
 
     @property
+    def state_sources(self) -> list[GrentonStateObject]:
+        return [self.cover_state, self.cover_position,
+                *([self.cover_tilt_position] if self.cover_tilt_position is not None else [])]
+
+    @property
     def current_cover_position(self) -> int | None:  # pyright: ignore[reportIncompatibleVariableOverride]
         value = self.coordinator.get_value_for_component(self.cover_position)
         if value is None:
@@ -136,4 +141,4 @@ class GrentonEntityRollerShutterV3(BaseGrentonEntity, CoverEntity): # pyright: i
             )
             if self.stop:
                 features |= CoverEntityFeature.STOP_TILT
-        return features  
+        return features

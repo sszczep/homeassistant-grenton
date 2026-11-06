@@ -1,0 +1,8 @@
+homeassistant==2026.9.4
+pytest>=8
+# Integration requirements.
+pydantic>=2.12.2
+# Imported by Home Assistant's camera platform during integration import.
+numpy>=2.3
+av>=16
+PyTurboJPEG>=1.8

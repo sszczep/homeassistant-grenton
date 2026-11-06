@@ -81,6 +81,11 @@ class GrentonEntityLed(BaseGrentonEntity, LightEntity): # pyright: ignore[report
         return ColorMode.HS
 
     @property
+    def state_sources(self) -> list[GrentonStateObject]:
+        return [self.state_object, self.hue_state_object,
+                self.saturation_state_object, self.brightness_state_object]
+
+    @property
     def is_on(self) -> bool | None: # pyright: ignore[reportIncompatibleVariableOverride]
         """Return whether the light is on (color channel or white channel)."""
         value = self.coordinator.get_value_for_component(self.state_object)

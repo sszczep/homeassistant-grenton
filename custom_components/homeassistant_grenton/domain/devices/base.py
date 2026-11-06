@@ -11,8 +11,32 @@ class BaseGrentonDevice(ABC):
     type: str
     id: str
     entities: list[BaseGrentonEntity]
-    name: str | None = None
+    # Set from the import flow / manual objects; None keeps the label-based name
+    custom_name: str | None = None
     suggested_area: str | None = None
+    # Widget-level label (when the widget has one), preferred over entity labels
+    widget_label: str | None = None
+
+    @property
+    def default_name(self) -> str:
+        """Summarize the widget using its own label or its distinct entity labels."""
+        if (self.widget_label or "").strip():
+            return self.widget_label.strip()  # type: ignore[union-attr]
+        labels = list(
+            dict.fromkeys(
+                entity.label.strip() for entity in self.entities if entity.label.strip()
+            )
+        )
+        if not labels:
+            return f"{self.type} ({self.id})"
+        name = " · ".join(labels[:2])
+        if len(labels) > 2:
+            name += f" (+{len(labels) - 2})"
+        return name
+
+    @property
+    def name(self) -> str:
+        return (self.custom_name or "").strip() or self.default_name
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -21,32 +45,21 @@ class BaseGrentonDevice(ABC):
             identifiers={("grenton", self.id)},
             manufacturer="Grenton",
             model=self.type,
+            name=self.name,
         )
-        if self.name:
-            info["name"] = self.name
-        else:
-            # Fallback: generic, translated name of the widget type
-            info["translation_key"] = self.type.lower()
         if self.suggested_area:
             info["suggested_area"] = self.suggested_area
         return info
 
-    def apply_naming(self, name: str | None, suggested_area: str | None) -> None:
-        """Set device name/area and propagate the device info to entities.
+    def apply_naming(self, custom_name: str | None, suggested_area: str | None) -> None:
+        """Set an optional custom name/area and refresh the entities' device info.
 
         Mappers hand entities a device_info snapshot, so it is refreshed here.
-        The only entity of a device, or one whose label equals the device
-        name, becomes the device's main entity (name=None): it follows a
-        custom device name and avoids friendly names like "Lampa Lampa".
+        The sole entity of a device follows the device name (HA main entity).
         """
-        self.name = name
+        self.custom_name = custom_name
         self.suggested_area = suggested_area
         info = self.device_info
-        single = len(self.entities) == 1
-        # Several entities sharing the device name (e.g. multisensor) keep labels
-        same_as_device = [e for e in self.entities if e.label.strip() == name]
         for entity in self.entities:
             entity._attr_device_info = info  # pyright: ignore[reportPrivateUsage]
-            entity.use_device_name = bool(name) and (
-                single or (len(same_as_device) == 1 and entity is same_as_device[0])
-            )
+            entity._use_device_name = len(self.entities) == 1  # pyright: ignore[reportAttributeAccessIssue]

@@ -17,6 +17,9 @@ class StepResult:
     step_id: Optional[str] = None
     # When true, the flow should immediately complete without showing a form
     complete: bool = False
+    # Optional validation after selector validation, without adding validators
+    # that Home Assistant cannot serialize into the form's UI schema.
+    validator: Callable[[dict[str, Any]], dict[str, Any]] | None = None
 
 
 @dataclass
@@ -62,6 +65,9 @@ class ConfigurableEntity(Generic[C]):
         if schema and hasattr(schema, "defaults"):
             return schema.defaults()  # type: ignore[attr-defined]
         return {}
+
+    async def async_prepare_configuration(self) -> None:
+        """Optionally load device settings before showing the first form."""
 
     def build_config_schema(self, current: Dict[str, Any]):
         """Return a voluptuous schema for configuration."""

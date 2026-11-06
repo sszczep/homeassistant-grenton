@@ -68,7 +68,7 @@ class GrentonEntityBinarySensor( # pyright: ignore[reportIncompatibleVariableOve
         self.state_object = state_object
         
         # Register state with coordinator
-        coordinator.register_component_state(state_object)
+        self._register_state(state_object)
 
     @property
     def is_on(self) -> bool | None: # pyright: ignore[reportIncompatibleVariableOverride]

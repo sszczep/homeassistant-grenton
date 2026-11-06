@@ -8,11 +8,11 @@ If you discover a security issue, we strongly encourage you to report it respons
 
 Please send all vulnerability reports to:
 
-[**contact@sszczep.dev**](mailto:contact@sszczep.dev)
+[**konradobal@gmail.com**](mailto:konradobal@gmail.com)
 
 Alternatively, you may open a **private security advisory** through the project’s GitHub repository:
 
-[**https://github.com/sszczep/homeassistant-grenton/security/advisories**](https://github.com/sszczep/homeassistant-grenton/security/advisories)
+[**https://github.com/k911/homeassistant-grenton/security/advisories**](https://github.com/k911/homeassistant-grenton/security/advisories)
 
 ### 🔒 Responsible Disclosure
 

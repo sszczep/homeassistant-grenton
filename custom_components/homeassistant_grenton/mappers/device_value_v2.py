@@ -3,7 +3,7 @@
 from ..coordinator import GrentonCoordinator
 from ..domain.devices.value_v2 import GrentonDeviceValueV2
 from ..domain.state_object import GrentonStateObject
-from ..domain.entities.value import GrentonEntityValue
+from ..domain.entities.value_v2 import value_v2_entity
 from ..dto.widgets.value_v2 import GrentonWidgetValueV2Dto
 
 
@@ -19,13 +19,13 @@ class DeviceValueV2Mapper:
             entities=[],
         )
         
-        entity = GrentonEntityValue(
+        entity = value_v2_entity(
             coordinator=coordinator,
             id=f"{dto.id}_0",
             label=dto.label,
             state_object=GrentonStateObject.from_dto(dto.object.value),
-            value_type=dto.valueType,
             device_info=device.device_info,
+            value_type=dto.valueType,
         )
         
         device.entities = [entity]

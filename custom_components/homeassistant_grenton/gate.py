@@ -114,23 +114,38 @@ class GrentonGateCoordinator(DataUpdateCoordinator[dict[tuple[str, str, str, str
         self.data = {}
 
     # --- interface shared with GrentonCoordinator -------------------------
-    def register_component_state(self, state: GrentonStateObject) -> None:
+    # Entities only see this subset, so they work unchanged on either transport.
+    clus: list[Any] = []
+
+    def register_component_state(self, state: GrentonStateObject, **_: Any) -> None:
         self._states[_state_key(state)] = state
 
     def get_value_for_component(self, state: GrentonStateObject) -> GrentonValue | None:
         return (self.data or {}).get(_state_key(state))
 
-    async def execute_action(self, action: GrentonAction) -> None:
+    def states_available(self, states: list[GrentonStateObject]) -> bool:
+        return self.last_update_success
+
+    def is_state_fresh(self, state: GrentonStateObject) -> bool:
+        return self.last_update_success
+
+    def state_read_mode(self, state: GrentonStateObject) -> str:
+        return "poll"
+
+    def last_polled(self, state: GrentonStateObject) -> Any:
+        return self.last_update_success_time if hasattr(self, "last_update_success_time") else None
+
+    async def execute_action(self, action: GrentonAction, *, raise_on_error: bool = False) -> None:
         lua = GrentonCluApiActionRequest.from_action(action).payload
         try:
             await self.client.call({"command": remote_lua(action.clu_id, lua)})
         except GrentonGateError as err:
+            if raise_on_error:
+                from homeassistant.exceptions import HomeAssistantError
+                raise HomeAssistantError(f"Gate HTTP action failed: {err}") from err
             _LOGGER.error("[gate] Action %s failed: %s", lua, err)
             return
         await self.async_request_refresh()
-
-    def is_clu_available(self, clu_id: str) -> bool:
-        return self.last_update_success
 
     # --- push (webhook) ----------------------------------------------------
     def push_updates(self, updates: list[dict[str, Any]]) -> int:

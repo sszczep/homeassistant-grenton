@@ -9,7 +9,7 @@ Thank you for considering a contribution to this project! We welcome improvement
 Click **Fork** on GitHub and clone your fork:
 
 ```bash
-git clone https://github.com/sszczep/homeassistant-grenton.git
+git clone https://github.com/k911/homeassistant-grenton.git
 cd homeassistant-grenton
 ```
 
@@ -53,15 +53,15 @@ Keep each change focused and tested. Update docs and translations when behavior 
 ### 4. Development Setup
 
 Recommended environment:
-- Python 3.12+
-- Home Assistant 2025.12.4+
+- Python 3.14.2+
+- Home Assistant 2026.9.4 (pinned in `tests/requirements.txt`)
 
 Create a virtual environment and install dependencies:
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+pip install -r tests/requirements.txt
 ```
 
 ### 5. Testing & Quality
@@ -70,7 +70,10 @@ Run tests and checks before opening a PR:
 
 ```bash
 # Unit tests
-pytest
+python -m pytest tests
+
+# Frontend regression tests (Node.js; no additional packages)
+node --test tests/*.test.mjs
 
 # Static type checking
 mypy custom_components/homeassistant_grenton
@@ -121,8 +124,8 @@ When filing an issue, please include:
 - Logs or screenshots if helpful
 
 Open an issue here:
-- Issues: https://github.com/sszczep/homeassistant-grenton/issues
-- Discussions: https://github.com/sszczep/homeassistant-grenton/discussions
+- Issues: https://github.com/k911/homeassistant-grenton/issues
+- Discussions: https://github.com/k911/homeassistant-grenton/discussions
 
 ### License
 
@@ -132,9 +135,4 @@ By contributing, you agree your contributions are licensed under **GPL-3.0** (sa
 
 Be respectful and collaborative. Follow GitHub Community Guidelines. Discrimination, harassment, or toxicity is not tolerated.
 
-### Sponsor
-
-If this project helps you, please consider sponsoring ongoing development:
-- GitHub Sponsors: https://github.com/sponsors/sszczep
-
-Thank you for your support and contributions!
+Thank you for your contributions!

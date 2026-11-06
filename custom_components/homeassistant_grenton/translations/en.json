@@ -21,15 +21,15 @@
         }
       },
       "naming": {
-        "title": "Device names",
-        "description": "By default, names are created from widget labels and interface pages become areas. You can change them now, page by page.",
+        "title": "Names, areas and units",
+        "description": "By default device names come from widget labels and interface pages become areas. You can now set, page by page, device and entity (friendly) names, device class, unit and precision of sensors. The same settings are available later in Configure → Names, units and precision.",
         "data": {
-          "customize_names": "Customize names and areas"
+          "customize_names": "Customize names, areas, units and precision"
         }
       },
       "page_names": {
         "title": "Page {step}/{total}: {page}",
-        "description": "Widgets: {count}. Empty field = default name. Empty area = no area assigned.",
+        "description": "Widgets: {count}. Empty field = default. Empty area = no area. Precision is the number of decimals shown in HA.",
         "data": {
           "area": "Area"
         }
@@ -51,7 +51,7 @@
     "step": {
       "entity_list": {
         "title": "Configure Entities",
-        "description": "Select an entity to configure its properties.",
+        "description": "Filter by type or search all entities.",
         "data": {
           "entity": "Entity"
         }
@@ -65,7 +65,7 @@
       },
       "configure_sensor_unit": {
         "title": "Configure {entity_name} - Unit of Measurement",
-        "description": "Select the unit of measurement for selected device class.",
+        "description": "Choose a unit. Without a device class, you can also enter a custom unit.",
         "data": {
           "unit_of_measurement": "Unit of Measurement"
         }
@@ -98,13 +98,161 @@
           "device_class": "Device Class"
         }
       },
+      "configure_scene_action": {
+        "title": "Configure {entity_name} - Scene Action",
+        "description": "Choose the call type, then configure its target and arguments.",
+        "data": {
+          "action": "Scene action"
+        }
+      },
+      "configure_on_off_state": {
+        "title": "Configure {entity_name} - State (1/3)",
+        "description": "Choose Switch or Light and configure the attribute or variable that provides the current state. Changing the entity type changes its entity ID; update dashboard and automation references after saving.",
+        "data": {
+          "entity_type": "Entity type",
+          "state": "State source"
+        }
+      },
+      "configure_on_off_on_action": {
+        "title": "Configure {entity_name} - Turn on (2/3)",
+        "description": "Choose the call type and configure the turn-on target, value or arguments.",
+        "data": {
+          "action_on": "Turn on action"
+        }
+      },
+      "configure_on_off_off_action": {
+        "title": "Configure {entity_name} - Turn off (3/3)",
+        "description": "Choose the call type and configure the turn-off target, value or arguments. Saving reloads the integration and applies all three forms.",
+        "data": {
+          "action_off": "Turn off action"
+        }
+      },
+      "configure_dimmer_state": {
+        "title": "Configure {entity_name} - Brightness source (1/4)",
+        "description": "Choose the brightness source and its native range. Precision is the number of decimal places sent to Grenton.",
+        "data": {
+          "state": "Brightness source",
+          "min": "Minimum value",
+          "max": "Maximum value",
+          "precision": "Decimal places"
+        }
+      },
+      "configure_dimmer_on_action": {
+        "title": "Configure {entity_name} - Turn on (2/4)",
+        "description": "Configure the turn-on command.",
+        "data": {
+          "action_on": "Turn on action"
+        }
+      },
+      "configure_dimmer_off_action": {
+        "title": "Configure {entity_name} - Turn off (3/4)",
+        "description": "Configure the turn-off command.",
+        "data": {
+          "action_off": "Turn off action"
+        }
+      },
+      "configure_dimmer_brightness_action": {
+        "title": "Configure {entity_name} - Set brightness (4/4)",
+        "description": "Use $value$ for the brightness in the native range. For Script/Method, put it in a Lua expression argument. Keep other arguments as needed. Saving reloads the integration.",
+        "data": {
+          "action_set_value": "Brightness action"
+        }
+      },
+      "clu_variables": {
+        "title": "Configure {clu_name} variables",
+        "description": "Add, edit, or remove custom CLU variables exposed in Home Assistant.",
+        "data": {
+          "operation": "Operation"
+        }
+      },
+      "clu_variable_select": {
+        "title": "Edit a CLU variable",
+        "description": "Select the variable to configure.",
+        "data": {
+          "variable_id": "Variable"
+        }
+      },
+      "clu_variable_remove": {
+        "title": "Remove a CLU variable entity",
+        "description": "Remove the selected variable from Home Assistant. Its value on the CLU is kept.",
+        "data": {
+          "variable_id": "Variable"
+        }
+      },
+      "configure_clu_variable": {
+        "title": "Configure a CLU variable",
+        "description": "Enter the variable name exactly as defined in Grenton and select its value type. Boolean variables become switches; other types become sensors.",
+        "data": {
+          "variable_name": "Variable name",
+          "label": "Display name",
+          "grenton_type": "Grenton type",
+          "read_mode": "Read mode"
+        },
+        "data_description": {
+          "read_mode": "Polling uses the CLU's configured interval."
+        }
+      },
+      "configure_value_v2_type": {
+        "title": "Configure {entity_name} - Entity Type",
+        "description": "Choose the entity type and read mode.",
+        "data": {
+          "entity_type": "Entity type",
+          "read_mode": "Read mode"
+        },
+        "data_description": {
+          "read_mode": "Temperatures use periodic reads at the interval configured for the CLU."
+        }
+      },
+      "configure_value_v2_binary": {
+        "title": "Configure {entity_name} - Binary Sensor",
+        "description": "Choose the device class. By default, positive values mean off (closed) and 0 or negative values mean on (open). Enable Invert state to reverse this mapping. Missing or invalid values remain unknown.",
+        "data": {
+          "device_class": "Device class",
+          "invert_state": "Invert state"
+        },
+        "data_description": {
+          "invert_state": "Disabled: positive values are off, 0 is on. Enabled: positive values are on, 0 is off. For Door, Window and Opening, on means open and off means closed."
+        }
+      },
+      "configure_thermostat": {
+        "title": "Configure {entity_name} - Thermostat",
+        "description": "Enable optional cooling, choose the heating/cooling direction independently of manual/schedule mode, and edit the weekly schedule. Saving a schedule preserves power and operating mode.",
+        "data": {
+          "thermostat": "Thermostat settings"
+        }
+      },
       "init": {
-        "title": "Grenton options",
+        "title": "Grenton settings",
         "menu_options": {
           "entity_list": "Configure entities",
+          "clu_read_settings": "Configure CLU",
           "add_object": "Add object manually",
           "remove_object": "Remove manual objects",
-          "gate_settings": "Gate HTTP settings"
+          "gate_settings": "Gate HTTP settings",
+          "entity_names": "Names, units and precision"
+        }
+      },
+      "clu_read_settings": {
+        "title": "Configure CLU",
+        "description": "Select a CLU to configure.",
+        "data": {
+          "clu_id": "CLU"
+        }
+      },
+      "clu_configuration": {
+        "title": "Configure CLU",
+        "description": "{clu_name}",
+        "menu_options": {
+          "clu_read_interval": "Connection and polling",
+          "clu_variables": "Variables"
+        }
+      },
+      "clu_read_interval": {
+        "title": "Configure {clu_name}",
+        "description": "Connection and polling settings.",
+        "data": {
+          "slow_read_interval": "Polling interval (seconds)",
+          "subscription_id": "Initial subscription ID"
         }
       },
       "add_object": {
@@ -140,6 +288,13 @@
         "data_description": {
           "scan_interval": "With the webhook enabled, polling is only a fallback – a longer interval such as 300 s is fine."
         }
+      },
+      "entity_names": {
+        "title": "Page {step}/{total}: {page}",
+        "description": "Widgets: {count}. Empty field = default. Empty area = no area. Precision is the number of decimals shown in HA.",
+        "data": {
+          "area": "Area"
+        }
       }
     },
     "abort": {
@@ -148,6 +303,9 @@
       "entity_not_configurable": "This entity cannot be configured."
     },
     "error": {
+      "invalid_configuration": "Select valid options and enter valid values.",
+      "cannot_apply_configuration": "Could not save the configuration to the CLU. Check the connection and current temperature limits, then retry.",
+      "cannot_read_configuration": "Could not read the current settings from the CLU. Check the connection and reopen configuration.",
       "invalid_grenton_id": "Invalid identifier. Use CLU->OBJECT format.",
       "clu_not_in_interface": "This CLU is not in the myGrenton interface. Choose the Gate HTTP connection.",
       "gate_not_configured": "Configure Gate HTTP in the options first.",
@@ -155,13 +313,37 @@
     }
   },
   "services": {
+    "set_thermostat_schedule": {
+      "name": "Set thermostat schedule",
+      "description": "Replace the complete weekly thermostat schedule using its configured temperature limits. Preserves power, mode, heating/cooling direction and schedule metadata.",
+      "fields": {
+        "schedule": {
+          "name": "Weekly schedule",
+          "description": "All seven lowercase English weekday names, each with time and temperature pairs. Start each day at 00:00; use 15-minute time boundaries and 0.5°C temperature increments."
+        }
+      }
+    },
     "run_scene": {
       "name": "Run scene",
       "description": "Run a Grenton SCENE script, optionally passing a parameter.",
       "fields": {
         "parameter": {
           "name": "Parameter",
-          "description": "Optional value passed verbatim into the script call (Lua syntax: \"abc\" for string, 42 for number). Leave empty to use the widget's default value."
+          "description": "Optional value passed verbatim into the script call (Lua syntax: \"abc\" for a string, 42 for a number). Omit this field to use the scene's saved arguments/value. An empty string calls without arguments."
+        }
+      }
+    },
+    "run_script": {
+      "name": "Run script",
+      "description": "Run a named Grenton script directly on a discovered CLU.",
+      "fields": {
+        "script": {
+          "name": "Script",
+          "description": "Name of the script on the selected CLU, without parentheses or arguments."
+        },
+        "arguments": {
+          "name": "Typed arguments",
+          "description": "Positional arguments. Add, edit, remove, or reorder rows. Omit trailing arguments to use the script's defaults; omit this field or use an empty list to call without arguments."
         }
       }
     }
@@ -208,6 +390,9 @@
     },
     "camera": {
       "name": "Camera"
+    },
+    "scene_double": {
+      "name": "Scene double"
     }
   },
   "entity": {
@@ -220,6 +405,88 @@
           "locked": "locked",
           "unknown": "unknown"
         }
+      },
+      "clu_controller": {
+        "name": "Controller"
+      },
+      "clu_request_timeouts": {
+        "name": "Request timeouts"
+      },
+      "clu_subscriptions": {
+        "name": "Realtime subscriptions"
+      },
+      "clu_uptime": {
+        "name": "Uptime"
+      },
+      "clu_bus_voltage": {
+        "name": "Bus voltage"
+      },
+      "clu_firmware_version": {
+        "name": "Firmware version"
+      },
+      "thermostat_schedule": {
+        "name": "Schedule",
+        "state_attributes": {
+          "following_schedule": {
+            "name": "Following schedule"
+          },
+          "direction": {
+            "name": "Direction",
+            "state": {
+              "heating": "Heating",
+              "cooling": "Cooling"
+            }
+          },
+          "scheduled_target": {
+            "name": "Current scheduled target"
+          },
+          "next_change": {
+            "name": "Next change"
+          },
+          "next_target": {
+            "name": "Next target"
+          },
+          "monday": {
+            "name": "Monday"
+          },
+          "tuesday": {
+            "name": "Tuesday"
+          },
+          "wednesday": {
+            "name": "Wednesday"
+          },
+          "thursday": {
+            "name": "Thursday"
+          },
+          "friday": {
+            "name": "Friday"
+          },
+          "saturday": {
+            "name": "Saturday"
+          },
+          "sunday": {
+            "name": "Sunday"
+          }
+        }
+      },
+      "thermostat_minimum": {
+        "name": "Minimum temperature"
+      },
+      "thermostat_maximum": {
+        "name": "Maximum temperature"
+      }
+    },
+    "binary_sensor": {
+      "clu_connection": {
+        "name": "Connection"
+      },
+      "clu_cloud_connection": {
+        "name": "Cloud connection"
+      }
+    },
+    "switch": {
+      "clu_use_cloud": {
+        "name": "Use cloud"
       }
     }
   },
@@ -315,7 +582,8 @@
         "tamper": "Tamper",
         "update": "Update",
         "vibration": "Vibration",
-        "window": "Window"
+        "window": "Window",
+        "none": "None"
       }
     },
     "sensor_device_classes": {
@@ -370,6 +638,7 @@
         "temperature": "Temperature",
         "temperature_delta": "Temperature delta",
         "timestamp": "Timestamp",
+        "uptime": "Uptime",
         "volatile_organic_compounds": "Volatile organic compounds",
         "volatile_organic_compounds_parts": "Volatile organic compounds parts",
         "voltage": "Voltage",
@@ -379,7 +648,253 @@
         "water": "Water",
         "weight": "Weight",
         "wind_direction": "Wind direction",
-        "wind_speed": "Wind speed"
+        "wind_speed": "Wind speed",
+        "none": "None"
+      }
+    },
+    "scene_call_types": {
+      "options": {
+        "SCRIPT": "Script",
+        "METHOD": "Method",
+        "ATTRIBUTE": "Attribute",
+        "VARIABLE": "Variable"
+      }
+    },
+    "scene_argument_types": {
+      "choices": {
+        "string": "String",
+        "number": "Number",
+        "float": "Float",
+        "boolean": "Boolean",
+        "nil": "Nil",
+        "lua": "Lua expression"
+      }
+    },
+    "scene_editor": {
+      "fields": {
+        "call_type": {
+          "name": "Action call type"
+        },
+        "clu_id": {
+          "name": "CLU"
+        },
+        "script_name": {
+          "name": "Script name"
+        },
+        "object_name": {
+          "name": "Object name"
+        },
+        "method_index": {
+          "name": "Method index"
+        },
+        "attribute_index": {
+          "name": "Attribute index"
+        },
+        "variable_name": {
+          "name": "Variable name"
+        },
+        "argument": {
+          "name": "Argument"
+        },
+        "argument_type": {
+          "name": "Type"
+        },
+        "argument_value": {
+          "name": "Value"
+        },
+        "add_argument": {
+          "name": "Add argument"
+        },
+        "remove": {
+          "name": "Remove"
+        },
+        "move_up": {
+          "name": "Move up"
+        },
+        "move_down": {
+          "name": "Move down"
+        },
+        "arguments": {
+          "name": "Arguments",
+          "description": "Omit trailing arguments to use the script or method defaults."
+        },
+        "state_call_type": {
+          "name": "State source type"
+        },
+        "set_value": {
+          "name": "Value to set"
+        }
+      }
+    },
+    "on_off_entity_types": {
+      "options": {
+        "switch": "Switch",
+        "light": "Light"
+      }
+    },
+    "clu_variable_operations": {
+      "options": {
+        "add": "Add variable",
+        "edit": "Edit variable",
+        "remove": "Remove variable"
+      }
+    },
+    "grenton_variable_types": {
+      "options": {
+        "BOOLEAN": "Boolean",
+        "STRING": "String",
+        "INTEGER": "Integer",
+        "FLOAT": "Float"
+      }
+    },
+    "value_v2_entity_types": {
+      "options": {
+        "sensor": "Sensor",
+        "binary_sensor": "Binary sensor"
+      }
+    },
+    "thermostat_editor": {
+      "fields": {
+        "cooling_enabled": {
+          "name": "Enable cooling"
+        },
+        "schedule_polling_enabled": {
+          "name": "Automatically sync schedule"
+        },
+        "edit_schedule": {
+          "name": "Edit weekly schedule"
+        },
+        "schedule_hint": {
+          "name": "Assign each day to one section. Each period lasts until the next start time; the last ends at midnight. Temperatures are in °C. Auto preserves the current heating/cooling direction."
+        },
+        "schedule_unavailable": {
+          "name": "Wait for the current schedule and temperature limits from the CLU, then reopen configuration."
+        },
+        "cooling_unavailable": {
+          "name": "Cooling requires readable and writable thermostat direction bindings."
+        },
+        "add_section": {
+          "name": "Add section"
+        },
+        "remove_section": {
+          "name": "Remove section"
+        },
+        "section": {
+          "name": "Section"
+        },
+        "days": {
+          "name": "Days"
+        },
+        "weekdays": {
+          "name": "Monday–Friday"
+        },
+        "weekend": {
+          "name": "Saturday–Sunday"
+        },
+        "all": {
+          "name": "Every day"
+        },
+        "custom": {
+          "name": "Selected days"
+        },
+        "monday": {
+          "name": "Monday"
+        },
+        "tuesday": {
+          "name": "Tuesday"
+        },
+        "wednesday": {
+          "name": "Wednesday"
+        },
+        "thursday": {
+          "name": "Thursday"
+        },
+        "friday": {
+          "name": "Friday"
+        },
+        "saturday": {
+          "name": "Saturday"
+        },
+        "sunday": {
+          "name": "Sunday"
+        },
+        "day_conflict": {
+          "name": "Select at least one day per section, with no day shared between sections."
+        },
+        "start_time": {
+          "name": "Start time"
+        },
+        "temperature": {
+          "name": "Temperature (°C)"
+        },
+        "remove_period": {
+          "name": "Remove period"
+        },
+        "add_period": {
+          "name": "Add period"
+        },
+        "control_direction": {
+          "name": "Control direction (preserves manual/schedule mode)"
+        },
+        "unchanged": {
+          "name": "Keep current direction"
+        },
+        "heating": {
+          "name": "Heating"
+        },
+        "cooling": {
+          "name": "Cooling"
+        },
+        "current_direction": {
+          "name": "Current direction"
+        },
+        "edit_limits": {
+          "name": "Edit temperature limits"
+        },
+        "minimum": {
+          "name": "Minimum temperature (°C)"
+        },
+        "maximum": {
+          "name": "Maximum temperature (°C)"
+        },
+        "limits_hint": {
+          "name": "Scheduled temperatures are preserved when the range changes. All targets must fit the new limits; edit the schedule below if needed."
+        },
+        "hour": {
+          "name": "Hour"
+        },
+        "minute": {
+          "name": "Minute"
+        }
+      }
+    },
+    "sensor_units": {
+      "options": {
+        "none": "None"
+      }
+    },
+    "value_read_modes": {
+      "options": {
+        "realtime": "Realtime",
+        "slow": "Polling"
+      }
+    },
+    "entity_picker": {
+      "fields": {
+        "entity_type": "Entity type",
+        "entity": "Entity"
+      },
+      "types": {
+        "all": "All entities",
+        "sensor": "Sensors",
+        "binary_sensor": "Binary sensors",
+        "switch": "Switches",
+        "light": "Lights",
+        "button": "Buttons",
+        "number": "Numbers",
+        "cover": "Covers",
+        "camera": "Cameras",
+        "climate": "Thermostats"
       }
     },
     "manual_kind": {

@@ -153,14 +153,14 @@ def build_entity(definition: dict[str, Any], coordinator: Any, clu_id: str, obje
                 state_object=_attr(clu_id, object_name, 0),
                 action_on=_exec(clu_id, object_name, 0, "255", on),
                 action_off=_exec(clu_id, object_name, 0, "0", off),
-                action_set_value=_exec(clu_id, object_name, 0, "0"),
+                action_set_value=_exec(clu_id, object_name, 0, "$value$"),
             )
         return GrentonEntityDimmer(
             coordinator=coordinator, id=uid, label=label, min=0, max=1, precision=2,
             state_object=_attr(clu_id, object_name, 0),
             action_on=_set(clu_id, object_name, 0, "1", on),
             action_off=_set(clu_id, object_name, 0, "0", off),
-            action_set_value=_set(clu_id, object_name, 0, "0"),
+            action_set_value=_set(clu_id, object_name, 0, "$value$"),
         )
     if kind in (KIND_LED_RGB, KIND_LED_RGBW):
         return GrentonEntityLedHex(
@@ -175,7 +175,7 @@ def build_entity(definition: dict[str, Any], coordinator: Any, clu_id: str, obje
             state_object=_attr(clu_id, object_name, read_index),
             action_on=_exec(clu_id, object_name, set_index, "255", on),
             action_off=_exec(clu_id, object_name, set_index, "0", off),
-            action_set_value=_exec(clu_id, object_name, set_index, "0"),
+            action_set_value=_exec(clu_id, object_name, set_index, "$value$"),
         )
     if kind == KIND_COVER:
         if zwave:
