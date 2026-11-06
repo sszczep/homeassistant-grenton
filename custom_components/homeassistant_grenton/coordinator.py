@@ -7,6 +7,7 @@ import asyncio
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.util import dt as dt_util
 
 from .domain.clu import GrentonClu
 from .domain.encryption import GrentonEncryption
@@ -19,6 +20,9 @@ from .domain.api.clu_messages import GrentonCluApiActionRequest
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
+
+# Consecutive failed pings (5 s apart) after which a CLU is considered offline
+OFFLINE_AFTER_FAILURES = 3
 
 class GrentonCoordinator(DataUpdateCoordinator):
     def __init__(self, hass: HomeAssistant, config_entry: ConfigEntry, clus: list[GrentonClu], encryption: GrentonEncryption):
@@ -40,6 +44,35 @@ class GrentonCoordinator(DataUpdateCoordinator):
         for clu in clus:
             self._apis[clu.id] = GrentonCluApi(clu, encryption)
 
+        # Connection health per CLU (#6)
+        self._failures: dict[str, int] = {clu.id: 0 for clu in clus}
+        self._seen: dict[str, bool] = {clu.id: False for clu in clus}
+        self.last_seen: dict[str, Any] = {clu.id: None for clu in clus}
+
+    def is_clu_available(self, clu_id: str) -> bool:
+        """True once the CLU answered and until it misses several pings."""
+        if clu_id not in self._failures:
+            return True  # not a UDP CLU (e.g. reached through the Gate)
+        return self._seen[clu_id] and self._failures[clu_id] < OFFLINE_AFTER_FAILURES
+
+    def _mark_alive(self, clu_id: str, alive: bool) -> None:
+        if clu_id not in self._failures:
+            return
+        before = self.is_clu_available(clu_id)
+        if alive:
+            self._failures[clu_id] = 0
+            self._seen[clu_id] = True
+            self.last_seen[clu_id] = dt_util.utcnow()
+        else:
+            self._failures[clu_id] += 1
+        after = self.is_clu_available(clu_id)
+        if before != after:
+            if after:
+                _LOGGER.info("[%s] CLU is online", clu_id)
+            else:
+                _LOGGER.warning("[%s] CLU is offline (%d missed pings)", clu_id, self._failures[clu_id])
+            self.async_update_listeners()
+
     async def _async_update_data(self): # type: ignore
         return self.state
     
@@ -55,6 +88,8 @@ class GrentonCoordinator(DataUpdateCoordinator):
                 _LOGGER.warning("[%s] Ping failed", clu_id)
         except Exception as e:
             _LOGGER.error("[%s] Error during ping: %s", clu_id, e)
+            success = False
+        self._mark_alive(clu_id, bool(success))
     
     async def _ping_loop(self) -> None:
         while True:
@@ -143,6 +178,7 @@ class GrentonCoordinator(DataUpdateCoordinator):
         """Process a report from a CLU and update state for the given keys."""
         clu_state = self.state.clus[clu_id]
         clu_state.update_keys(keys, values)
+        self._mark_alive(clu_id, True)
 
         self.async_set_updated_data(self.state.__dict__)
         _LOGGER.debug("[%s] Processed report with %d values", clu_id, len(values))

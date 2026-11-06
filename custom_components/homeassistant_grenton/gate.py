@@ -129,6 +129,9 @@ class GrentonGateCoordinator(DataUpdateCoordinator[dict[tuple[str, str, str, str
             return
         await self.async_request_refresh()
 
+    def is_clu_available(self, clu_id: str) -> bool:
+        return self.last_update_success
+
     # --- push (webhook) ----------------------------------------------------
     def push_updates(self, updates: list[dict[str, Any]]) -> int:
         """Apply values pushed by the Gate; returns the number of known keys updated.

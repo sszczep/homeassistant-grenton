@@ -336,3 +336,90 @@ async def test_led_zwave_and_webhook(hass: HomeAssistant, aioclient_mock, hass_c
         resp = await client.post("/api/webhook/hook123", json={"clu": "CLU9", "object": "ZWA0001", "index": 4, "value": 1})
         assert resp.status == 200  # unregistered webhooks answer 200 but do nothing
         assert (await resp.text()) == ""
+
+
+async def test_availability_connectivity_and_diagnostics(hass: HomeAssistant, aioclient_mock):
+    from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClientMockResponse
+    from custom_components.grenton.diagnostics import async_get_config_entry_diagnostics
+
+    gate_up = {"ok": True}
+
+    async def reply(method, url, data):
+        if not gate_up["ok"]:
+            return AiohttpClientMockResponse(method, url, status=500)
+        out = {"g_status": "OK"}
+        for k, lua in data.items():
+            out[k] = 1 if k in ("status", "command") else _gate_values(lua)
+        return AiohttpClientMockResponse(method, url, json=out)
+
+    aioclient_mock.get(GATE_URL, side_effect=reply)
+    interface = json.loads(json.dumps(INTERFACE))
+    interface["pages"][0]["widgets"].append({"id": "bad1", "type": "VALUE_V2", "label": "Temp"})
+    entry = MockConfigEntry(domain="grenton", unique_id="iface1", title="iface1",
+                            data={"ip_address": "x", "port": "9998", "pin": "4321", "interface": interface},
+                            options=OPTIONS)
+    entry.add_to_hass(hass)
+    api = "custom_components.grenton.domain.api.clu.GrentonCluApi"
+    ping_ok = {"ok": True}
+
+    async def ping(self):
+        return ping_ok["ok"]
+
+    async def register(self, keys):
+        return [1 for _ in keys]
+
+    with patch(f"{api}.connect", AsyncMock(return_value=True)), \
+         patch(f"{api}.ping", ping), \
+         patch(f"{api}.register_component_states", register), \
+         patch(f"{api}.disconnect", AsyncMock()):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+        coordinator = entry.runtime_data.coordinator
+        gate = entry.runtime_data.gate_coordinator
+
+        assert hass.states.get("binary_sensor.clu_parter").state == "on"
+        assert hass.states.get("binary_sensor.grenton_gate_http").state == "on"
+        assert hass.states.get("switch.lampa").state == "on"
+
+        # CLU stops answering: unavailable after 3 missed pings, not before
+        ping_ok["ok"] = False
+        for _ in range(2):
+            await coordinator._send_ping("CLU221000001")
+        await hass.async_block_till_done()
+        assert hass.states.get("switch.lampa").state == "on"
+        await coordinator._send_ping("CLU221000001")
+        await hass.async_block_till_done()
+        assert hass.states.get("switch.lampa").state == "unavailable"
+        assert hass.states.get("switch.pompa").state == "unavailable"
+        assert hass.states.get("binary_sensor.clu_parter").state == "off"
+        # Gate entities are independent of the UDP CLU
+        assert hass.states.get("climate.termostat_salon").state == "heat"
+
+        ping_ok["ok"] = True
+        await coordinator._send_ping("CLU221000001")
+        await hass.async_block_till_done()
+        assert hass.states.get("switch.lampa").state == "on"
+        assert hass.states.get("binary_sensor.clu_parter").state == "on"
+
+        # Gate (REST) down -> its entities unavailable, connectivity off
+        gate_up["ok"] = False
+        await gate.async_refresh()
+        await hass.async_block_till_done()
+        assert hass.states.get("climate.termostat_salon").state == "unavailable"
+        assert hass.states.get("binary_sensor.grenton_gate_http").state == "off"
+        assert hass.states.get("switch.lampa").state == "on"
+        gate_up["ok"] = True
+        await gate.async_refresh()
+        await hass.async_block_till_done()
+        assert hass.states.get("binary_sensor.grenton_gate_http").state == "on"
+
+        diag = await async_get_config_entry_diagnostics(hass, entry)
+        assert diag["entry"]["data"]["pin"] == "**REDACTED**"
+        assert diag["interface"]["encryption"]["key"] == "**REDACTED**"
+        assert diag["clus"][0]["available"] is True
+        assert [w["id"] for w in diag["skipped_widgets"]] == ["bad1"]
+        assert any("unit" in e["loc"] for e in diag["skipped_widgets"][0]["errors"])
+        assert diag["gate"]["last_update_success"] is True
+        json.dumps(diag, default=str)
+
+        await hass.config_entries.async_unload(entry.entry_id)

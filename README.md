@@ -114,6 +114,21 @@ Each object chooses its connection:
 | **UDP** | CLU present in the imported interface | instant (CLU subscription) |
 | **Gate HTTP** | GATE HTTP module + HttpListener below | polling (Gate settings) |
 
+#### Connection status
+
+Every CLU and the Gate HTTP get a diagnostic **connectivity** binary sensor
+(e.g. `binary_sensor.<clu_name>`, `binary_sensor.grenton_gate_http`). A CLU is
+offline after 3 missed pings (~15 s) and before it first answers after a HA
+restart; the Gate is offline when a poll fails. Entities of an offline CLU or
+Gate become `unavailable`. Useful e.g. in Node-RED to restore states after a
+power failure.
+
+#### Diagnostics
+
+**Settings → Devices & services → Grenton → ⋮ → Download diagnostics** gives the
+interface JSON (PIN and encryption keys redacted), the exact validation error
+of every skipped widget, CLU status and manual objects – attach it to issues.
+
 #### Gate HTTP setup
 
 1. On the Gate create an `HttpListener` virtual object named

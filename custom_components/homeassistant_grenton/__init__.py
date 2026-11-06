@@ -20,7 +20,8 @@ from .gate import (
     DEFAULT_SCAN_INTERVAL,
     GrentonGateCoordinator,
 )
-from .manual_objects import CONF_MANUAL_OBJECTS, TRANSPORT_GATE, build_manual_devices
+from .manual_objects import CONF_MANUAL_OBJECTS, TRANSPORT_GATE, GrentonDeviceManual, build_manual_devices
+from .domain.entities.connectivity import GrentonEntityConnectivity
 
 from .dto.mobile_interface import GrentonMobileInterfaceDto
 from .domain.encryption import GrentonEncryption
@@ -70,7 +71,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: GrentonConfigEntr
         )
     manual_devices = build_manual_devices(manual_definitions, clus, coordinator, gate_coordinator, _LOGGER)
     _LOGGER.debug("Built %d manual device(s)", len(manual_devices))
-    devices = devices + manual_devices
+    devices = devices + manual_devices + _connectivity_devices(clus, coordinator, gate_coordinator)
     _LOGGER.debug("Device details:")
     for device in devices:
         _LOGGER.debug("- Device %s (%s) with %d entity(ies)", device.type, device.id, len(device.entities))
@@ -102,6 +103,28 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: GrentonConfigEntr
     await hass.config_entries.async_forward_entry_setups(config_entry, PLATFORMS)
 
     return True
+
+
+def _connectivity_devices(clus: list, coordinator: GrentonCoordinator, gate_coordinator) -> list:
+    """One diagnostic connectivity sensor per CLU and one for the Gate HTTP (#6)."""
+    devices = []
+    for clu in clus:
+        device = GrentonDeviceManual(
+            type="CLU",
+            id=f"clu_{clu.id}",
+            entities=[GrentonEntityConnectivity(coordinator, f"connectivity_{clu.id}", clu.name or clu.id, clu.id)],
+        )
+        device.apply_naming(clu.name or clu.id, None)
+        devices.append(device)
+    if gate_coordinator is not None:
+        device = GrentonDeviceManual(
+            type="GATE_HTTP",
+            id="gate_http",
+            entities=[GrentonEntityConnectivity(gate_coordinator, "connectivity_gate_http", "Gate HTTP", None)],
+        )
+        device.apply_naming("Grenton Gate HTTP", None)
+        devices.append(device)
+    return devices
 
 
 def _register_gate_webhook(
