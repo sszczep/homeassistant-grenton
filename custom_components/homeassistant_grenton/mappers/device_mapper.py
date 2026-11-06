@@ -18,6 +18,7 @@ from ..dto.widgets.roller_shutter_v3 import GrentonWidgetRollerShutterV3Dto
 from ..dto.widgets.camera import GrentonWidgetCameraDto
 from ..dto.widgets.scene import GrentonWidgetSceneDto
 from ..dto.widgets.scene_double import GrentonWidgetSceneDoubleDto
+from ..dto.widgets.thermostat import GrentonWidgetThermostatDto
 from ..dto.widgets.thermostat_v2 import GrentonWidgetThermostatV2Dto
 from ..dto.mobile_interface import GrentonMobileInterfaceDto
 from ..naming import resolve_page_area
@@ -90,6 +91,12 @@ class DeviceMapper:
             return DeviceSceneMapper.to_domain(dto, coordinator)
         if isinstance(dto, GrentonWidgetSceneDoubleDto):
             return DeviceSceneDoubleMapper.to_domain(dto, coordinator)
+        if isinstance(dto, GrentonWidgetThermostatDto):
+            device = DeviceThermostatV2Mapper.to_domain(dto.to_v2(), coordinator)
+            device.type = dto.type
+            for entity in device.entities:
+                entity._attr_device_info = device.device_info  # pyright: ignore[reportPrivateUsage]
+            return device
 
         raise ValueError(f"Unknown widget type: {type(dto)}")
 

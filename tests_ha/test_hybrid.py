@@ -679,3 +679,147 @@ async def test_scene_double_buttons(hass: HomeAssistant, shape):
         else:
             assert names == ["Otwórz · Zamknij Otwórz", "Otwórz · Zamknij Zamknij"]
         await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_import_from_grenton_objects_takes_over_entity_ids(hass: HomeAssistant, aioclient_mock):
+    from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClientMockResponse
+
+    async def reply(method, url, data):
+        out = {"g_status": "OK"}
+        for k, lua in data.items():
+            out[k] = 1 if k in ("status", "command") else _gate_values(lua)
+        return AiohttpClientMockResponse(method, url, json=out)
+
+    aioclient_mock.get(GATE_URL, side_effect=reply)
+    reg = er.async_get(hass)
+    area = __import__("homeassistant.helpers.area_registry", fromlist=["x"]).async_get(hass).async_create("Kotłownia")
+
+    def old_object(title, data, platform, object_id, unique_id, **registry_kwargs):
+        entry = MockConfigEntry(domain="grenton_objects", title=title,
+                                data={"api_endpoint": "10.0.0.50/HAlistener", "auto_update": True,
+                                      "update_interval": 10, **data})
+        entry.add_to_hass(hass)
+        ent = reg.async_get_or_create(platform, "grenton_objects", unique_id, config_entry=entry,
+                                      suggested_object_id=object_id, original_name=title)
+        if registry_kwargs:
+            ent = reg.async_update_entity(ent.entity_id, **registry_kwargs)
+        return entry, ent
+
+    _, pump = old_object("Pompa", {"grenton_id": "CLU221000001->DOU0002", "name": "Pompa"},
+                         "switch", "pompa_cwu", "grenton_DOU0002", name="Pompa CWU", area_id=area.id, icon="mdi:pump")
+    _, therm = old_object("Termostat", {"grenton_id": "CLU221000009->THE0001", "name": "Termostat"},
+                          "climate", "termostat_salon", "grenton_THE0001")
+    _, temp = old_object("Temperatura", {"grenton_id": "CLU221000009->tempZewn", "name": "Temperatura",
+                                         "grenton_type": "DEFAULT_SENSOR", "device_class": "temperature",
+                                         "unit_of_measurement": "°C", "state_class": "measurement"},
+                         "sensor", "temperatura_zewn", "grenton_tempZewn")
+    old_object("Zmienna gate", {"grenton_id": "gateVar", "name": "Zmienna gate"},
+               "sensor", "zmienna_gate", "grenton_gateVar")
+
+    entry = MockConfigEntry(domain="grenton", unique_id="iface1", title="iface1",
+                            data={"ip_address": "x", "port": "9998", "pin": "1", "interface": INTERFACE})
+    entry.add_to_hass(hass)
+    api = "custom_components.grenton.domain.api.clu.GrentonCluApi"
+    executed = []
+
+    async def register(self, keys):
+        return [1 for _ in keys]
+
+    async def execute(self, action):
+        executed.append(GrentonCluApiActionRequest.from_action(action).payload)
+        return True
+
+    with patch(f"{api}.connect", AsyncMock(return_value=True)), \
+         patch(f"{api}.ping", AsyncMock(return_value=True)), \
+         patch(f"{api}.register_component_states", register), \
+         patch(f"{api}.execute_action", execute), \
+         patch(f"{api}.disconnect", AsyncMock()):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+        result = await hass.config_entries.options.async_init(entry.entry_id)
+        assert "import_grenton_objects" in result["menu_options"]
+        result = await hass.config_entries.options.async_configure(result["flow_id"], {"next_step_id": "import_grenton_objects"})
+        assert result["step_id"] == "import_grenton_objects"
+        assert "gateVar" in result["description_placeholders"]["skipped"]
+        defaults = [k for k in result["data_schema"].schema if str(k) == "objects"][0].default()
+        assert len(defaults) == 3
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], {"objects": defaults, "prefer_udp": True, "take_over": True})
+        assert result["type"] == FlowResultType.CREATE_ENTRY
+        await hass.async_block_till_done()
+
+        # Old entries gone, only the Gate-variable one stays
+        assert [e.title for e in hass.config_entries.async_entries("grenton_objects")] == ["Zmienna gate"]
+        # Same entity_ids, now owned by this integration
+        for old in (pump, therm, temp):
+            new = reg.async_get(old.entity_id)
+            assert new is not None and new.platform == "grenton", old.entity_id
+            assert new.config_entry_id == entry.entry_id
+        new_pump = reg.async_get(pump.entity_id)
+        assert new_pump.name == "Pompa CWU" and new_pump.icon == "mdi:pump" and new_pump.area_id == area.id
+
+        # Transport: CLU in interface -> UDP, others -> Gate (URL taken over)
+        objects = {o["name"]: o for o in entry.options["manual_objects"]}
+        assert objects["Pompa"]["transport"] == "udp"
+        assert objects["Termostat"]["transport"] == "gate"
+        assert objects["Temperatura"]["variable"] is True
+        assert entry.options["gate"]["url"] == GATE_URL
+
+        # Entities work under the old ids
+        assert hass.states.get(pump.entity_id).state == "on"
+        assert hass.states.get(therm.entity_id).state == "heat"
+        temp_state = hass.states.get(temp.entity_id)
+        assert temp_state.attributes["unit_of_measurement"] == "°C"
+        assert temp_state.attributes["device_class"] == "temperature"
+        await hass.services.async_call("switch", "turn_off", {"entity_id": pump.entity_id}, blocking=True)
+        assert executed[-1] == 'DOU0002:set(0,"0")'
+        await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_thermostat_v1_widgets_from_real_interface(hass: HomeAssistant, caplog):
+    """Six THERMOSTAT (v1) widgets from a real interface become climate entities."""
+    import pathlib
+    interface = json.loads((pathlib.Path(__file__).parent / "fixtures" / "interface_thermostat_v1.json").read_text())
+    entry = MockConfigEntry(domain="grenton", unique_id=interface["id"], title=interface["id"],
+                            data={"ip_address": "x", "port": "9998", "pin": "1", "interface": interface})
+    entry.add_to_hass(hass)
+    api = "custom_components.grenton.domain.api.clu.GrentonCluApi"
+    executed = []
+    # state on, mode 1, current 21.3, target 22, output 1 (heating), min 18, max 24
+    by_index = {"6": 1, "8": 1, "14": 21.3, "12": 22.0, "13": 1, "10": 18.0, "11": 24.0, "9": ""}
+
+    async def register(self, keys):
+        return [by_index.get(str(getattr(k, "index", "")), 0) for k in keys]
+
+    async def execute(self, action):
+        executed.append(GrentonCluApiActionRequest.from_action(action).payload)
+        return True
+
+    with patch(f"{api}.connect", AsyncMock(return_value=True)), \
+         patch(f"{api}.ping", AsyncMock(return_value=True)), \
+         patch(f"{api}.register_component_states", register), \
+         patch(f"{api}.execute_action", execute), \
+         patch(f"{api}.disconnect", AsyncMock()):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+        reg = er.async_get(hass)
+        climates = [e for e in er.async_entries_for_config_entry(reg, entry.entry_id) if e.domain == "climate"]
+        assert len(climates) == 6
+        names = sorted(hass.states.get(e.entity_id).attributes["friendly_name"] for e in climates)
+        assert "Ania" in names
+        assert device(hass, "wrx8in4S").model == "THERMOSTAT"
+        # Headers are not reported as skipped widgets
+        assert "Skipping widget type HEADER" not in caplog.text
+        assert "Skipping widget type THERMOSTAT" not in caplog.text
+
+        ania = next(e for e in climates if hass.states.get(e.entity_id).attributes["friendly_name"] == "Ania")
+        await hass.services.async_call("climate", "set_temperature",
+                                       {"entity_id": ania.entity_id, "temperature": 23}, blocking=True)
+        assert any(p.startswith("THE1270:set(3,") for p in executed), executed
+
+        from custom_components.grenton.diagnostics import async_get_config_entry_diagnostics
+        diag = await async_get_config_entry_diagnostics(hass, entry)
+        assert diag["skipped_widgets"] == []
+        await hass.config_entries.async_unload(entry.entry_id)

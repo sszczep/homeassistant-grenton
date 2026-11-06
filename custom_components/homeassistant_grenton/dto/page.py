@@ -12,6 +12,9 @@ _WIDGET_ADAPTER: TypeAdapter[GrentonWidgetUnionDto] = TypeAdapter(GrentonWidgetU
 # Widget types already reported in this run, to avoid flooding the log
 _REPORTED: set[str] = set()
 
+# Purely visual widgets: nothing to expose in Home Assistant, skipped silently
+DECORATIVE_WIDGET_TYPES = frozenset({"HEADER", "TEXT"})
+
 
 def _summarize(error: ValidationError, limit: int = 3) -> str:
     parts = []
@@ -43,6 +46,8 @@ class GrentonPageDto(BaseModel):
         result: List[GrentonWidgetUnionDto] = []
 
         for item in v:
+            if isinstance(item, dict) and item.get("type") in DECORATIVE_WIDGET_TYPES:
+                continue
             widget, error = validate_widget(item)
             if widget is not None:
                 result.append(widget)

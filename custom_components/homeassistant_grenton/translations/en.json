@@ -229,7 +229,8 @@
           "add_object": "Add object manually",
           "remove_object": "Remove manual objects",
           "gate_settings": "Gate HTTP settings",
-          "entity_names": "Names, units and precision"
+          "entity_names": "Names, units and precision",
+          "import_grenton_objects": "Import from Grenton Objects"
         }
       },
       "clu_read_settings": {
@@ -295,12 +296,22 @@
         "data": {
           "area": "Area"
         }
+      },
+      "import_grenton_objects": {
+        "title": "Import from Grenton Objects",
+        "description": "Found {count} objects to import. Each becomes a manual object of this integration. When taking over, the Grenton Objects entries are removed and the new entities get the same entity_id, name, icon, area, aliases and labels – automations and dashboards keep working. The Gate URL is copied if not set yet.\n\nSkipped (variable on the Gate itself or no entity): {skipped}",
+        "data": {
+          "objects": "Objects",
+          "prefer_udp": "Use UDP when the CLU is in the myGrenton interface (instant state)",
+          "take_over": "Take over entities (remove Grenton Objects entries, keep entity_id)"
+        }
       }
     },
     "abort": {
       "no_configurable_entities": "No configurable entities found.",
       "entity_not_found": "Selected entity not found.",
-      "entity_not_configurable": "This entity cannot be configured."
+      "entity_not_configurable": "This entity cannot be configured.",
+      "no_grenton_objects": "No Grenton Objects objects to import."
     },
     "error": {
       "invalid_configuration": "Select valid options and enter valid values.",

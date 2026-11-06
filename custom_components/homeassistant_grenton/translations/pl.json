@@ -229,7 +229,8 @@
           "add_object": "Dodaj obiekt ręcznie",
           "remove_object": "Usuń ręczne obiekty",
           "gate_settings": "Ustawienia Gate HTTP",
-          "entity_names": "Nazwy, jednostki i dokładność"
+          "entity_names": "Nazwy, jednostki i dokładność",
+          "import_grenton_objects": "Importuj z Grenton Objects"
         }
       },
       "clu_read_settings": {
@@ -295,12 +296,22 @@
         "data": {
           "area": "Obszar"
         }
+      },
+      "import_grenton_objects": {
+        "title": "Import z Grenton Objects",
+        "description": "Znaleziono {count} obiektów do importu. Każdy stanie się ręcznym obiektem tej integracji. Przy przejęciu encji stare wpisy Grenton Objects zostaną usunięte, a nowe encje dostaną ten sam entity_id, nazwę, ikonę, obszar, aliasy i etykiety – automatyzacje i dashboardy działają dalej. Adres Gate zostanie przejęty, jeśli nie jest ustawiony.\n\nPominięte (zmienna na samym Gate lub brak encji): {skipped}",
+        "data": {
+          "objects": "Obiekty",
+          "prefer_udp": "Używaj UDP, gdy CLU jest w interfejsie myGrenton (stan na bieżąco)",
+          "take_over": "Przejmij encje (usuń wpisy Grenton Objects, zachowaj entity_id)"
+        }
       }
     },
     "abort": {
       "no_configurable_entities": "Nie znaleziono konfigurowalnych encji.",
       "entity_not_found": "Wybrana encja nie została znaleziona.",
-      "entity_not_configurable": "Ta encja nie może być skonfigurowana."
+      "entity_not_configurable": "Ta encja nie może być skonfigurowana.",
+      "no_grenton_objects": "Nie znaleziono obiektów Grenton Objects do zaimportowania."
     },
     "error": {
       "invalid_configuration": "Wybierz poprawne opcje i wprowadź poprawne wartości.",
