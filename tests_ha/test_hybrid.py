@@ -790,7 +790,7 @@ async def test_thermostat_v1_widgets_from_real_interface(hass: HomeAssistant, ca
     by_index = {"6": 1, "8": 1, "14": 21.3, "12": 22.0, "13": 1, "10": 18.0, "11": 24.0, "9": ""}
 
     async def register(self, keys):
-        return [by_index.get(str(getattr(k, "index", "")), 0) for k in keys]
+        return [by_index.get(str(getattr(k, "name", "")), 0) for k in keys]
 
     async def execute(self, action):
         executed.append(GrentonCluApiActionRequest.from_action(action).payload)
@@ -822,4 +822,49 @@ async def test_thermostat_v1_widgets_from_real_interface(hass: HomeAssistant, ca
         from custom_components.grenton.diagnostics import async_get_config_entry_diagnostics
         diag = await async_get_config_entry_diagnostics(hass, entry)
         assert diag["skipped_widgets"] == []
+        await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_thermostat_schedule_shows_target_and_change_switches_to_manual(hass: HomeAssistant):
+    import pathlib
+    interface = json.loads((pathlib.Path(__file__).parent / "fixtures" / "interface_thermostat_v1.json").read_text())
+    entry = MockConfigEntry(domain="grenton", unique_id=interface["id"], title=interface["id"],
+                            data={"ip_address": "x", "port": "9998", "pin": "1", "interface": interface})
+    entry.add_to_hass(hass)
+    api = "custom_components.grenton.domain.api.clu.GrentonCluApi"
+    executed = []
+    # state on, mode 2 = schedule, target from schedule 20.5
+    by_index = {"6": 1, "8": 2, "14": 19.8, "12": 20.5, "13": 0, "10": 10.0, "11": 30.0, "9": ""}
+
+    async def register(self, keys):
+        return [by_index.get(str(getattr(k, "name", "")), 0) for k in keys]
+
+    async def execute(self, action):
+        executed.append(GrentonCluApiActionRequest.from_action(action).payload)
+        return True
+
+    with patch(f"{api}.connect", AsyncMock(return_value=True)), \
+         patch(f"{api}.ping", AsyncMock(return_value=True)), \
+         patch(f"{api}.register_component_states", register), \
+         patch(f"{api}.fetch_component_states", register), \
+         patch(f"{api}.execute_action", execute), \
+         patch(f"{api}.disconnect", AsyncMock()):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+        climate_id = eid(hass, "wrx8in4S_climate")
+        # Temperatures are slow reads; trigger one instead of waiting for the timer
+        coordinator = entry.runtime_data.coordinator
+        await coordinator._send_slow_poll("CLU221005591")
+        await hass.async_block_till_done()
+        state = hass.states.get(climate_id)
+        assert state.state == "auto"
+        assert state.attributes["temperature"] == 20.5  # visible on the card in schedule mode
+        target = st(hass, "wrx8in4S_target_temperature")
+        assert target is not None and target.attributes["unit_of_measurement"] == "°C"
+
+        await hass.services.async_call("climate", "set_temperature",
+                                       {"entity_id": climate_id, "temperature": 22}, blocking=True)
+        assert executed[0].startswith("THE1270:set(3,")
+        assert 'THE1270:set(8,"0")' in executed  # manual mode
+        assert executed[-1] == 'THE1270:set(6,"1")'
         await hass.config_entries.async_unload(entry.entry_id)

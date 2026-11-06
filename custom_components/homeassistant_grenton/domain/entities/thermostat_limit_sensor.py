@@ -35,3 +35,25 @@ class GrentonThermostatLimitSensor(BaseGrentonEntity, SensorEntity):
     @property
     def native_value(self) -> float | None:
         return self.thermostat._number(self._binding)
+
+
+class GrentonThermostatTargetSensor(BaseGrentonEntity, SensorEntity):
+    """Effective target temperature (manual or from the schedule), read-only."""
+
+    _attr_device_class = SensorDeviceClass.TEMPERATURE
+    _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
+    _attr_suggested_display_precision = 1
+    _attr_translation_key = "thermostat_target"
+
+    def __init__(self, thermostat: GrentonEntityThermostatV2, id: str) -> None:
+        super().__init__(
+            thermostat.coordinator,
+            id,
+            thermostat.label,
+            cast(DeviceInfo | None, thermostat.device_info),
+        )
+        self.thermostat = thermostat
+
+    @property
+    def native_value(self) -> float | None:
+        return self.thermostat.target_temperature

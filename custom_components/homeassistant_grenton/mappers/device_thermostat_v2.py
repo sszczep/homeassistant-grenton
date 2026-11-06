@@ -3,7 +3,7 @@
 from ..coordinator import GrentonCoordinator
 from ..domain.action import GrentonAction, GrentonActionAttribute
 from ..domain.devices.thermostat_v2 import GrentonDeviceThermostatV2
-from ..domain.entities.thermostat_limit_sensor import GrentonThermostatLimitSensor
+from ..domain.entities.thermostat_limit_sensor import GrentonThermostatLimitSensor, GrentonThermostatTargetSensor
 from ..domain.entities.thermostat_schedule_sensor import GrentonThermostatScheduleSensor
 from ..domain.entities.thermostat_v2 import GrentonEntityThermostatV2
 from ..domain.enums import GrentonActionEventType
@@ -92,5 +92,6 @@ class DeviceThermostatV2Mapper:
             GrentonThermostatLimitSensor(
                 thermostat, f"{dto.id}_max_temperature", False
             ),
+            GrentonThermostatTargetSensor(thermostat, f"{dto.id}_target_temperature"),
         ]
         return device

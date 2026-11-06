@@ -315,12 +315,9 @@ class GrentonEntityThermostatV2(
 
     @property
     def supported_features(self) -> ClimateEntityFeature:
-        # HA's thermostat controls are editable whenever TARGET_TEMPERATURE is
-        # advertised, even in AUTO. Advertise it only for the manual setpoint.
-        features = self._attr_supported_features
-        if self._number("mode") == 0:
-            features |= ClimateEntityFeature.TARGET_TEMPERATURE
-        return features
+        # Always advertised so the card shows the effective target, also while
+        # following the schedule; changing it there switches to manual mode.
+        return self._attr_supported_features | ClimateEntityFeature.TARGET_TEMPERATURE
 
     @property
     def min_temp(self) -> float:
@@ -447,12 +444,19 @@ class GrentonEntityThermostatV2(
             )
         temperature = round(temperature * 2) / 2
         async with self._command_lock:
-            if requested_mode == HVACMode.AUTO or self._number("mode") != 0:
+            if requested_mode == HVACMode.AUTO:
                 raise ServiceValidationError(
-                    "Select Heat or Cool (manual mode) before changing the target temperature"
+                    "Select Heat or Cool to set the target manually; in Auto the schedule sets it"
                 )
-            # Updating a target never leaves schedule mode implicitly.
             await self._execute("setTargetTemperatureAction", str(temperature))
+            if requested_mode is None and self._number("mode") != 0:
+                # Changing the target outside manual mode (e.g. on the card while
+                # following the schedule) switches to manual in the current direction.
+                requested_mode = (
+                    HVACMode.COOL
+                    if self._direction() == 1 and self.cooling_enabled
+                    else HVACMode.HEAT
+                )
             if requested_mode is not None:
                 await self._set_hvac_mode(requested_mode)
             await self._refresh_target()
