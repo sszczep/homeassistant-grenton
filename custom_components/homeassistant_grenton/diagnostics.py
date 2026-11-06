@@ -12,7 +12,7 @@ from typing import Any
 from homeassistant.components.diagnostics import async_redact_data
 from homeassistant.core import HomeAssistant
 
-from .dto.page import validate_widget
+from .dto.page import DECORATIVE_WIDGET_TYPES, validate_widget
 from .integration_config import GrentonConfigEntry
 
 TO_REDACT = {"pin", "key", "iv", "webhook_id", "password", "token"}
@@ -22,6 +22,8 @@ def _skipped_widgets(interface: dict[str, Any]) -> list[dict[str, Any]]:
     skipped: list[dict[str, Any]] = []
     for page in interface.get("pages", []) or []:
         for item in page.get("widgets", []) or []:
+            if isinstance(item, dict) and item.get("type") in DECORATIVE_WIDGET_TYPES:
+                continue
             widget, error = validate_widget(item)
             if widget is None and error is not None:
                 skipped.append({

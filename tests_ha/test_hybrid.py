@@ -775,3 +775,51 @@ async def test_import_from_grenton_objects_takes_over_entity_ids(hass: HomeAssis
         await hass.services.async_call("switch", "turn_off", {"entity_id": pump.entity_id}, blocking=True)
         assert executed[-1] == 'DOU0002:set(0,"0")'
         await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_thermostat_v1_widgets_from_real_interface(hass: HomeAssistant, caplog):
+    """Six THERMOSTAT (v1) widgets from a real interface become climate entities."""
+    import pathlib
+    interface = json.loads((pathlib.Path(__file__).parent / "fixtures" / "interface_thermostat_v1.json").read_text())
+    entry = MockConfigEntry(domain="grenton", unique_id=interface["id"], title=interface["id"],
+                            data={"ip_address": "x", "port": "9998", "pin": "1", "interface": interface})
+    entry.add_to_hass(hass)
+    api = "custom_components.grenton.domain.api.clu.GrentonCluApi"
+    executed = []
+    # state on, mode 1, current 21.3, target 22, output 1 (heating), min 18, max 24
+    by_index = {"6": 1, "8": 1, "14": 21.3, "12": 22.0, "13": 1, "10": 18.0, "11": 24.0, "9": ""}
+
+    async def register(self, keys):
+        return [by_index.get(str(getattr(k, "index", "")), 0) for k in keys]
+
+    async def execute(self, action):
+        executed.append(GrentonCluApiActionRequest.from_action(action).payload)
+        return True
+
+    with patch(f"{api}.connect", AsyncMock(return_value=True)), \
+         patch(f"{api}.ping", AsyncMock(return_value=True)), \
+         patch(f"{api}.register_component_states", register), \
+         patch(f"{api}.execute_action", execute), \
+         patch(f"{api}.disconnect", AsyncMock()):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+        reg = er.async_get(hass)
+        climates = [e for e in er.async_entries_for_config_entry(reg, entry.entry_id) if e.domain == "climate"]
+        assert len(climates) == 6
+        names = sorted(hass.states.get(e.entity_id).attributes["friendly_name"] for e in climates)
+        assert "Ania" in names
+        assert device(hass, "wrx8in4S").model == "THERMOSTAT"
+        # Headers are not reported as skipped widgets
+        assert "Skipping widget type HEADER" not in caplog.text
+        assert "Skipping widget type THERMOSTAT" not in caplog.text
+
+        ania = next(e for e in climates if hass.states.get(e.entity_id).attributes["friendly_name"] == "Ania")
+        await hass.services.async_call("climate", "set_temperature",
+                                       {"entity_id": ania.entity_id, "temperature": 23}, blocking=True)
+        assert any(p.startswith("THE1270:set(3,") for p in executed), executed
+
+        from custom_components.grenton.diagnostics import async_get_config_entry_diagnostics
+        diag = await async_get_config_entry_diagnostics(hass, entry)
+        assert diag["skipped_widgets"] == []
+        await hass.config_entries.async_unload(entry.entry_id)

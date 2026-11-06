@@ -1,0 +1,1100 @@
+{
+ "pages": [
+  {
+   "isFullscreenWidget": false,
+   "name": "Parter",
+   "icon": "ground_floor",
+   "id": "1686211561204",
+   "widgets": [
+    {
+     "components": [
+      {
+       "unit": "UNKNOWN",
+       "label": "Łazienka",
+       "type": "HEADER",
+       "rowId": 0
+      }
+     ],
+     "id": "T19tP979",
+     "type": "HEADER"
+    },
+    {
+     "components": [
+      {
+       "unit": "UNKNOWN",
+       "label": "Salon",
+       "type": "HEADER",
+       "rowId": 0
+      }
+     ],
+     "id": "WbuktYK9",
+     "type": "HEADER"
+    },
+    {
+     "components": [
+      {
+       "unit": "UNKNOWN",
+       "label": "Kuchnia",
+       "type": "HEADER",
+       "rowId": 0
+      }
+     ],
+     "id": "WQzl6rkS",
+     "type": "HEADER"
+    }
+   ]
+  },
+  {
+   "isFullscreenWidget": false,
+   "name": "Pietro",
+   "icon": "first_floor",
+   "id": "1686211561215",
+   "widgets": [
+    {
+     "components": [
+      {
+       "unit": "UNKNOWN",
+       "label": "Łazienka",
+       "type": "HEADER",
+       "rowId": 0
+      }
+     ],
+     "id": "eNjtQtTU",
+     "type": "HEADER"
+    },
+    {
+     "components": [
+      {
+       "unit": "UNKNOWN",
+       "label": "Sypialnia",
+       "type": "HEADER",
+       "rowId": 0
+      }
+     ],
+     "id": "d1E9O6yB",
+     "type": "HEADER"
+    }
+   ]
+  },
+  {
+   "isFullscreenWidget": false,
+   "name": "Stan",
+   "icon": "switch",
+   "id": "1696670377093",
+   "widgets": [
+    {
+     "components": [
+      {
+       "unit": "UNKNOWN",
+       "label": "Czujniki",
+       "type": "HEADER",
+       "rowId": 0
+      }
+     ],
+     "id": "jlkjQ2w8",
+     "type": "HEADER"
+    }
+   ]
+  },
+  {
+   "isFullscreenWidget": false,
+   "name": "Ogrzewanie",
+   "icon": "floor_heating",
+   "id": "1686211561214",
+   "widgets": [
+    {
+     "components": [
+      {
+       "unit": "UNKNOWN",
+       "label": "Kaloryfery",
+       "type": "HEADER",
+       "rowId": 0
+      }
+     ],
+     "id": "6vJH6OEm",
+     "type": "HEADER"
+    },
+    {
+     "components": [
+      {
+       "image": "temperature",
+       "unit": "UNKNOWN",
+       "label": "Ania",
+       "state": {
+        "cluId": "CLU221005591",
+        "objectName": "THE1270",
+        "index": "6",
+        "callType": "ATTRIBUTE"
+       },
+       "type": "THERMOSTAT_STATE",
+       "actions": [
+        {
+         "cluId": "CLU221005591",
+         "objectName": "THE1270",
+         "index": "6",
+         "event": "CLICK",
+         "value": "$value$",
+         "callType": "ATTRIBUTE"
+        }
+       ],
+       "rowId": 0
+      },
+      {
+       "unit": "UNKNOWN",
+       "state": {
+        "cluId": "CLU221005591",
+        "objectName": "THE1270",
+        "index": "8",
+        "callType": "ATTRIBUTE"
+       },
+       "type": "THERMOSTAT_MODE",
+       "actions": [
+        {
+         "cluId": "CLU221005591",
+         "objectName": "THE1270",
+         "index": "8",
+         "event": "CLICK",
+         "value": "$value$",
+         "callType": "ATTRIBUTE"
+        }
+       ],
+       "rowId": 0
+      },
+      {
+       "unit": "UNKNOWN",
+       "state": {
+        "cluId": "CLU221005591",
+        "objectName": "THE1270",
+        "index": "14",
+        "callType": "ATTRIBUTE"
+       },
+       "type": "THERMOSTAT_CURRENT_TEMP",
+       "rowId": 0
+      },
+      {
+       "unit": "UNKNOWN",
+       "state": {
+        "cluId": "CLU221005591",
+        "objectName": "THE1270",
+        "index": "12",
+        "callType": "ATTRIBUTE"
+       },
+       "type": "THERMOSTAT_TARGET_TEMP",
+       "actions": [
+        {
+         "cluId": "CLU221005591",
+         "objectName": "THE1270",
+         "index": "3",
+         "event": "CLICK",
+         "value": "$value$",
+         "callType": "ATTRIBUTE"
+        }
+       ],
+       "rowId": 0
+      },
+      {
+       "unit": "UNKNOWN",
+       "state": {
+        "cluId": "CLU221005591",
+        "objectName": "THE1270",
+        "index": "13",
+        "callType": "ATTRIBUTE"
+       },
+       "type": "THERMOSTAT_OPERATIONAL_STATE",
+       "rowId": 0
+      },
+      {
+       "unit": "UNKNOWN",
+       "state": {
+        "cluId": "CLU221005591",
+        "objectName": "THE1270",
+        "index": "9",
+        "callType": "ATTRIBUTE"
+       },
+       "type": "THERMOSTAT_SCHEDULE",
+       "actions": [
+        {
+         "cluId": "CLU221005591",
+         "objectName": "THE1270",
+         "index": "9",
+         "event": "CLICK",
+         "value": "$value$",
+         "callType": "ATTRIBUTE"
+        }
+       ],
+       "rowId": 1
+      },
+      {
+       "unit": "UNKNOWN",
+       "state": {
+        "cluId": "CLU221005591",
+        "objectName": "THE1270",
+        "index": "10",
+        "callType": "ATTRIBUTE"
+       },
+       "type": "THERMOSTAT_SCHEDULE_MIN_TEMP",
+       "actions": [
+        {
+         "cluId": "CLU221005591",
+         "objectName": "THE1270",
+         "index": "10",
+         "event": "CLICK",
+         "value": "$value$",
+         "callType": "ATTRIBUTE"
+        }
+       ],
+       "rowId": 1
+      },
+      {
+       "unit": "UNKNOWN",
+       "state": {
+        "cluId": "CLU221005591",
+        "objectName": "THE1270",
+        "index": "11",
+        "callType": "ATTRIBUTE"
+       },
+       "type": "THERMOSTAT_SCHEDULE_MAX_TEMP",
+       "actions": [
+        {
+         "cluId": "CLU221005591",
+         "objectName": "THE1270",
+         "index": "11",
+         "event": "CLICK",
+         "value": "$value$",
+         "callType": "ATTRIBUTE"
+        }
+       ],
+       "rowId": 1
+      }
+     ],
+     "id": "wrx8in4S",
+     "type": "THERMOSTAT"
+    },
+    {
+     "components": [
+      {
+       "image": "temperature",
+       "unit": "UNKNOWN",
+       "label": "Gabinet Emilki",
+       "state": {
+        "cluId": "CLU221005591",
+        "objectName": "THE7522",
+        "index": "6",
+        "callType": "ATTRIBUTE"
+       },
+       "type": "THERMOSTAT_STATE",
+       "actions": [
+        {
+         "cluId": "CLU221005591",
+         "objectName": "THE7522",
+         "index": "6",
+         "event": "CLICK",
+         "value": "$value$",
+         "callType": "ATTRIBUTE"
+        }
+       ],
+       "rowId": 0
+      },
+      {
+       "unit": "UNKNOWN",
+       "state": {
+        "cluId": "CLU221005591",
+        "objectName": "THE7522",
+        "index": "8",
+        "callType": "ATTRIBUTE"
+       },
+       "type": "THERMOSTAT_MODE",
+       "actions": [
+        {
+         "cluId": "CLU221005591",
+         "objectName": "THE7522",
+         "index": "8",
+         "event": "CLICK",
+         "value": "$value$",
+         "callType": "ATTRIBUTE"
+        }
+       ],
+       "rowId": 0
+      },
+      {
+       "unit": "UNKNOWN",
+       "state": {
+        "cluId": "CLU221005591",
+        "objectName": "THE7522",
+        "index": "14",
+        "callType": "ATTRIBUTE"
+       },
+       "type": "THERMOSTAT_CURRENT_TEMP",
+       "rowId": 0
+      },
+      {
+       "unit": "UNKNOWN",
+       "state": {
+        "cluId": "CLU221005591",
+        "objectName": "THE7522",
+        "index": "12",
+        "callType": "ATTRIBUTE"
+       },
+       "type": "THERMOSTAT_TARGET_TEMP",
+       "actions": [
+        {
+         "cluId": "CLU221005591",
+         "objectName": "THE7522",
+         "index": "3",
+         "event": "CLICK",
+         "value": "$value$",
+         "callType": "ATTRIBUTE"
+        }
+       ],
+       "rowId": 0
+      },
+      {
+       "unit": "UNKNOWN",
+       "state": {
+        "cluId": "CLU221005591",
+        "objectName": "THE7522",
+        "index": "13",
+        "callType": "ATTRIBUTE"
+       },
+       "type": "THERMOSTAT_OPERATIONAL_STATE",
+       "rowId": 0
+      },
+      {
+       "unit": "UNKNOWN",
+       "state": {
+        "cluId": "CLU221005591",
+        "objectName": "THE7522",
+        "index": "9",
+        "callType": "ATTRIBUTE"
+       },
+       "type": "THERMOSTAT_SCHEDULE",
+       "actions": [
+        {
+         "cluId": "CLU221005591",
+         "objectName": "THE7522",
+         "index": "9",
+         "event": "CLICK",
+         "value": "$value$",
+         "callType": "ATTRIBUTE"
+        }
+       ],
+       "rowId": 1
+      },
+      {
+       "unit": "UNKNOWN",
+       "state": {
+        "cluId": "CLU221005591",
+        "objectName": "THE7522",
+        "index": "10",
+        "callType": "ATTRIBUTE"
+       },
+       "type": "THERMOSTAT_SCHEDULE_MIN_TEMP",
+       "actions": [
+        {
+         "cluId": "CLU221005591",
+         "objectName": "THE7522",
+         "index": "10",
+         "event": "CLICK",
+         "value": "$value$",
+         "callType": "ATTRIBUTE"
+        }
+       ],
+       "rowId": 1
+      },
+      {
+       "unit": "UNKNOWN",
+       "state": {
+        "cluId": "CLU221005591",
+        "objectName": "THE7522",
+        "index": "11",
+        "callType": "ATTRIBUTE"
+       },
+       "type": "THERMOSTAT_SCHEDULE_MAX_TEMP",
+       "actions": [
+        {
+         "cluId": "CLU221005591",
+         "objectName": "THE7522",
+         "index": "11",
+         "event": "CLICK",
+         "value": "$value$",
+         "callType": "ATTRIBUTE"
+        }
+       ],
+       "rowId": 1
+      }
+     ],
+     "id": "BRGPqkLO",
+     "type": "THERMOSTAT"
+    },
+    {
+     "components": [
+      {
+       "image": "temperature",
+       "unit": "UNKNOWN",
+       "label": "Sypialnia",
+       "state": {
+        "cluId": "CLU221005591",
+        "objectName": "THE8675",
+        "index": "6",
+        "callType": "ATTRIBUTE"
+       },
+       "type": "THERMOSTAT_STATE",
+       "actions": [
+        {
+         "cluId": "CLU221005591",
+         "objectName": "THE8675",
+         "index": "6",
+         "event": "CLICK",
+         "value": "$value$",
+         "callType": "ATTRIBUTE"
+        }
+       ],
+       "rowId": 0
+      },
+      {
+       "unit": "UNKNOWN",
+       "state": {
+        "cluId": "CLU221005591",
+        "objectName": "THE8675",
+        "index": "8",
+        "callType": "ATTRIBUTE"
+       },
+       "type": "THERMOSTAT_MODE",
+       "actions": [
+        {
+         "cluId": "CLU221005591",
+         "objectName": "THE8675",
+         "index": "8",
+         "event": "CLICK",
+         "value": "$value$",
+         "callType": "ATTRIBUTE"
+        }
+       ],
+       "rowId": 0
+      },
+      {
+       "unit": "UNKNOWN",
+       "state": {
+        "cluId": "CLU221005591",
+        "objectName": "THE8675",
+        "index": "14",
+        "callType": "ATTRIBUTE"
+       },
+       "type": "THERMOSTAT_CURRENT_TEMP",
+       "rowId": 0
+      },
+      {
+       "unit": "UNKNOWN",
+       "state": {
+        "cluId": "CLU221005591",
+        "objectName": "THE8675",
+        "index": "12",
+        "callType": "ATTRIBUTE"
+       },
+       "type": "THERMOSTAT_TARGET_TEMP",
+       "actions": [
+        {
+         "cluId": "CLU221005591",
+         "objectName": "THE8675",
+         "index": "3",
+         "event": "CLICK",
+         "value": "$value$",
+         "callType": "ATTRIBUTE"
+        }
+       ],
+       "rowId": 0
+      },
+      {
+       "unit": "UNKNOWN",
+       "state": {
+        "cluId": "CLU221005591",
+        "objectName": "THE8675",
+        "index": "13",
+        "callType": "ATTRIBUTE"
+       },
+       "type": "THERMOSTAT_OPERATIONAL_STATE",
+       "rowId": 0
+      },
+      {
+       "unit": "UNKNOWN",
+       "state": {
+        "cluId": "CLU221005591",
+        "objectName": "THE8675",
+        "index": "9",
+        "callType": "ATTRIBUTE"
+       },
+       "type": "THERMOSTAT_SCHEDULE",
+       "actions": [
+        {
+         "cluId": "CLU221005591",
+         "objectName": "THE8675",
+         "index": "9",
+         "event": "CLICK",
+         "value": "$value$",
+         "callType": "ATTRIBUTE"
+        }
+       ],
+       "rowId": 1
+      },
+      {
+       "unit": "UNKNOWN",
+       "state": {
+        "cluId": "CLU221005591",
+        "objectName": "THE8675",
+        "index": "10",
+        "callType": "ATTRIBUTE"
+       },
+       "type": "THERMOSTAT_SCHEDULE_MIN_TEMP",
+       "actions": [
+        {
+         "cluId": "CLU221005591",
+         "objectName": "THE8675",
+         "index": "10",
+         "event": "CLICK",
+         "value": "$value$",
+         "callType": "ATTRIBUTE"
+        }
+       ],
+       "rowId": 1
+      },
+      {
+       "unit": "UNKNOWN",
+       "state": {
+        "cluId": "CLU221005591",
+        "objectName": "THE8675",
+        "index": "11",
+        "callType": "ATTRIBUTE"
+       },
+       "type": "THERMOSTAT_SCHEDULE_MAX_TEMP",
+       "actions": [
+        {
+         "cluId": "CLU221005591",
+         "objectName": "THE8675",
+         "index": "11",
+         "event": "CLICK",
+         "value": "$value$",
+         "callType": "ATTRIBUTE"
+        }
+       ],
+       "rowId": 1
+      }
+     ],
+     "id": "KYrWFAtV",
+     "type": "THERMOSTAT"
+    },
+    {
+     "components": [
+      {
+       "image": "temperature",
+       "unit": "UNKNOWN",
+       "label": "Łazienka parter",
+       "state": {
+        "cluId": "CLU221005591",
+        "objectName": "THE1291",
+        "index": "6",
+        "callType": "ATTRIBUTE"
+       },
+       "type": "THERMOSTAT_STATE",
+       "actions": [
+        {
+         "cluId": "CLU221005591",
+         "objectName": "THE1291",
+         "index": "6",
+         "event": "CLICK",
+         "value": "$value$",
+         "callType": "ATTRIBUTE"
+        }
+       ],
+       "rowId": 0
+      },
+      {
+       "unit": "UNKNOWN",
+       "state": {
+        "cluId": "CLU221005591",
+        "objectName": "THE1291",
+        "index": "8",
+        "callType": "ATTRIBUTE"
+       },
+       "type": "THERMOSTAT_MODE",
+       "actions": [
+        {
+         "cluId": "CLU221005591",
+         "objectName": "THE1291",
+         "index": "8",
+         "event": "CLICK",
+         "value": "$value$",
+         "callType": "ATTRIBUTE"
+        }
+       ],
+       "rowId": 0
+      },
+      {
+       "unit": "UNKNOWN",
+       "state": {
+        "cluId": "CLU221005591",
+        "objectName": "THE1291",
+        "index": "14",
+        "callType": "ATTRIBUTE"
+       },
+       "type": "THERMOSTAT_CURRENT_TEMP",
+       "rowId": 0
+      },
+      {
+       "unit": "UNKNOWN",
+       "state": {
+        "cluId": "CLU221005591",
+        "objectName": "THE1291",
+        "index": "12",
+        "callType": "ATTRIBUTE"
+       },
+       "type": "THERMOSTAT_TARGET_TEMP",
+       "actions": [
+        {
+         "cluId": "CLU221005591",
+         "objectName": "THE1291",
+         "index": "3",
+         "event": "CLICK",
+         "value": "$value$",
+         "callType": "ATTRIBUTE"
+        }
+       ],
+       "rowId": 0
+      },
+      {
+       "unit": "UNKNOWN",
+       "state": {
+        "cluId": "CLU221005591",
+        "objectName": "THE1291",
+        "index": "13",
+        "callType": "ATTRIBUTE"
+       },
+       "type": "THERMOSTAT_OPERATIONAL_STATE",
+       "rowId": 0
+      },
+      {
+       "unit": "UNKNOWN",
+       "state": {
+        "cluId": "CLU221005591",
+        "objectName": "THE1291",
+        "index": "9",
+        "callType": "ATTRIBUTE"
+       },
+       "type": "THERMOSTAT_SCHEDULE",
+       "actions": [
+        {
+         "cluId": "CLU221005591",
+         "objectName": "THE1291",
+         "index": "9",
+         "event": "CLICK",
+         "value": "$value$",
+         "callType": "ATTRIBUTE"
+        }
+       ],
+       "rowId": 1
+      },
+      {
+       "unit": "UNKNOWN",
+       "state": {
+        "cluId": "CLU221005591",
+        "objectName": "THE1291",
+        "index": "10",
+        "callType": "ATTRIBUTE"
+       },
+       "type": "THERMOSTAT_SCHEDULE_MIN_TEMP",
+       "actions": [
+        {
+         "cluId": "CLU221005591",
+         "objectName": "THE1291",
+         "index": "10",
+         "event": "CLICK",
+         "value": "$value$",
+         "callType": "ATTRIBUTE"
+        }
+       ],
+       "rowId": 1
+      },
+      {
+       "unit": "UNKNOWN",
+       "state": {
+        "cluId": "CLU221005591",
+        "objectName": "THE1291",
+        "index": "11",
+        "callType": "ATTRIBUTE"
+       },
+       "type": "THERMOSTAT_SCHEDULE_MAX_TEMP",
+       "actions": [
+        {
+         "cluId": "CLU221005591",
+         "objectName": "THE1291",
+         "index": "11",
+         "event": "CLICK",
+         "value": "$value$",
+         "callType": "ATTRIBUTE"
+        }
+       ],
+       "rowId": 1
+      }
+     ],
+     "id": "wA3eurQQ",
+     "type": "THERMOSTAT"
+    },
+    {
+     "components": [
+      {
+       "image": "temperature",
+       "unit": "UNKNOWN",
+       "label": "Łazienka pietro",
+       "state": {
+        "cluId": "CLU221005591",
+        "objectName": "THE4254",
+        "index": "6",
+        "callType": "ATTRIBUTE"
+       },
+       "type": "THERMOSTAT_STATE",
+       "actions": [
+        {
+         "cluId": "CLU221005591",
+         "objectName": "THE4254",
+         "index": "6",
+         "event": "CLICK",
+         "value": "$value$",
+         "callType": "ATTRIBUTE"
+        }
+       ],
+       "rowId": 0
+      },
+      {
+       "unit": "UNKNOWN",
+       "state": {
+        "cluId": "CLU221005591",
+        "objectName": "THE4254",
+        "index": "8",
+        "callType": "ATTRIBUTE"
+       },
+       "type": "THERMOSTAT_MODE",
+       "actions": [
+        {
+         "cluId": "CLU221005591",
+         "objectName": "THE4254",
+         "index": "8",
+         "event": "CLICK",
+         "value": "$value$",
+         "callType": "ATTRIBUTE"
+        }
+       ],
+       "rowId": 0
+      },
+      {
+       "unit": "UNKNOWN",
+       "state": {
+        "cluId": "CLU221005591",
+        "objectName": "THE4254",
+        "index": "14",
+        "callType": "ATTRIBUTE"
+       },
+       "type": "THERMOSTAT_CURRENT_TEMP",
+       "rowId": 0
+      },
+      {
+       "unit": "UNKNOWN",
+       "state": {
+        "cluId": "CLU221005591",
+        "objectName": "THE4254",
+        "index": "12",
+        "callType": "ATTRIBUTE"
+       },
+       "type": "THERMOSTAT_TARGET_TEMP",
+       "actions": [
+        {
+         "cluId": "CLU221005591",
+         "objectName": "THE4254",
+         "index": "3",
+         "event": "CLICK",
+         "value": "$value$",
+         "callType": "ATTRIBUTE"
+        }
+       ],
+       "rowId": 0
+      },
+      {
+       "unit": "UNKNOWN",
+       "state": {
+        "cluId": "CLU221005591",
+        "objectName": "THE4254",
+        "index": "13",
+        "callType": "ATTRIBUTE"
+       },
+       "type": "THERMOSTAT_OPERATIONAL_STATE",
+       "rowId": 0
+      },
+      {
+       "unit": "UNKNOWN",
+       "state": {
+        "cluId": "CLU221005591",
+        "objectName": "THE4254",
+        "index": "9",
+        "callType": "ATTRIBUTE"
+       },
+       "type": "THERMOSTAT_SCHEDULE",
+       "actions": [
+        {
+         "cluId": "CLU221005591",
+         "objectName": "THE4254",
+         "index": "9",
+         "event": "CLICK",
+         "value": "$value$",
+         "callType": "ATTRIBUTE"
+        }
+       ],
+       "rowId": 1
+      },
+      {
+       "unit": "UNKNOWN",
+       "state": {
+        "cluId": "CLU221005591",
+        "objectName": "THE4254",
+        "index": "10",
+        "callType": "ATTRIBUTE"
+       },
+       "type": "THERMOSTAT_SCHEDULE_MIN_TEMP",
+       "actions": [
+        {
+         "cluId": "CLU221005591",
+         "objectName": "THE4254",
+         "index": "10",
+         "event": "CLICK",
+         "value": "$value$",
+         "callType": "ATTRIBUTE"
+        }
+       ],
+       "rowId": 1
+      },
+      {
+       "unit": "UNKNOWN",
+       "state": {
+        "cluId": "CLU221005591",
+        "objectName": "THE4254",
+        "index": "11",
+        "callType": "ATTRIBUTE"
+       },
+       "type": "THERMOSTAT_SCHEDULE_MAX_TEMP",
+       "actions": [
+        {
+         "cluId": "CLU221005591",
+         "objectName": "THE4254",
+         "index": "11",
+         "event": "CLICK",
+         "value": "$value$",
+         "callType": "ATTRIBUTE"
+        }
+       ],
+       "rowId": 1
+      }
+     ],
+     "id": "kZQVuxSw",
+     "type": "THERMOSTAT"
+    },
+    {
+     "components": [
+      {
+       "unit": "UNKNOWN",
+       "label": "Podłogówka",
+       "type": "HEADER",
+       "rowId": 0
+      }
+     ],
+     "id": "RZTqi4G9",
+     "type": "HEADER"
+    },
+    {
+     "components": [
+      {
+       "image": "floor_heating",
+       "unit": "UNKNOWN",
+       "label": "Podłogówka",
+       "state": {
+        "cluId": "CLU221005591",
+        "objectName": "THE1566",
+        "index": "6",
+        "callType": "ATTRIBUTE"
+       },
+       "type": "THERMOSTAT_STATE",
+       "actions": [
+        {
+         "cluId": "CLU221005591",
+         "objectName": "THE1566",
+         "index": "6",
+         "event": "CLICK",
+         "value": "$value$",
+         "callType": "ATTRIBUTE"
+        }
+       ],
+       "rowId": 0
+      },
+      {
+       "unit": "UNKNOWN",
+       "state": {
+        "cluId": "CLU221005591",
+        "objectName": "THE1566",
+        "index": "8",
+        "callType": "ATTRIBUTE"
+       },
+       "type": "THERMOSTAT_MODE",
+       "actions": [
+        {
+         "cluId": "CLU221005591",
+         "objectName": "THE1566",
+         "index": "8",
+         "event": "CLICK",
+         "value": "$value$",
+         "callType": "ATTRIBUTE"
+        }
+       ],
+       "rowId": 0
+      },
+      {
+       "unit": "UNKNOWN",
+       "state": {
+        "cluId": "CLU221005591",
+        "objectName": "THE1566",
+        "index": "14",
+        "callType": "ATTRIBUTE"
+       },
+       "type": "THERMOSTAT_CURRENT_TEMP",
+       "rowId": 0
+      },
+      {
+       "unit": "UNKNOWN",
+       "state": {
+        "cluId": "CLU221005591",
+        "objectName": "THE1566",
+        "index": "12",
+        "callType": "ATTRIBUTE"
+       },
+       "type": "THERMOSTAT_TARGET_TEMP",
+       "actions": [
+        {
+         "cluId": "CLU221005591",
+         "objectName": "THE1566",
+         "index": "3",
+         "event": "CLICK",
+         "value": "$value$",
+         "callType": "ATTRIBUTE"
+        }
+       ],
+       "rowId": 0
+      },
+      {
+       "unit": "UNKNOWN",
+       "state": {
+        "cluId": "CLU221005591",
+        "objectName": "THE1566",
+        "index": "13",
+        "callType": "ATTRIBUTE"
+       },
+       "type": "THERMOSTAT_OPERATIONAL_STATE",
+       "rowId": 0
+      },
+      {
+       "unit": "UNKNOWN",
+       "state": {
+        "cluId": "CLU221005591",
+        "objectName": "THE1566",
+        "index": "9",
+        "callType": "ATTRIBUTE"
+       },
+       "type": "THERMOSTAT_SCHEDULE",
+       "actions": [
+        {
+         "cluId": "CLU221005591",
+         "objectName": "THE1566",
+         "index": "9",
+         "event": "CLICK",
+         "value": "$value$",
+         "callType": "ATTRIBUTE"
+        }
+       ],
+       "rowId": 1
+      },
+      {
+       "unit": "UNKNOWN",
+       "state": {
+        "cluId": "CLU221005591",
+        "objectName": "THE1566",
+        "index": "10",
+        "callType": "ATTRIBUTE"
+       },
+       "type": "THERMOSTAT_SCHEDULE_MIN_TEMP",
+       "actions": [
+        {
+         "cluId": "CLU221005591",
+         "objectName": "THE1566",
+         "index": "10",
+         "event": "CLICK",
+         "value": "$value$",
+         "callType": "ATTRIBUTE"
+        }
+       ],
+       "rowId": 1
+      },
+      {
+       "unit": "UNKNOWN",
+       "state": {
+        "cluId": "CLU221005591",
+        "objectName": "THE1566",
+        "index": "11",
+        "callType": "ATTRIBUTE"
+       },
+       "type": "THERMOSTAT_SCHEDULE_MAX_TEMP",
+       "actions": [
+        {
+         "cluId": "CLU221005591",
+         "objectName": "THE1566",
+         "index": "11",
+         "event": "CLICK",
+         "value": "$value$",
+         "callType": "ATTRIBUTE"
+        }
+       ],
+       "rowId": 1
+      }
+     ],
+     "id": "sLdpeDR4",
+     "type": "THERMOSTAT"
+    },
+    {
+     "components": [
+      {
+       "unit": "UNKNOWN",
+       "label": "Pokoje bez regulacji",
+       "type": "HEADER",
+       "rowId": 0
+      }
+     ],
+     "id": "I6QFKv6Q",
+     "type": "HEADER"
+    }
+   ]
+  }
+ ],
+ "encryption": {
+  "key": "MDEyMzQ1Njc4OWFiY2RlZg==",
+  "iv": "MDEyMzQ1Njc4OWFiY2RlZg=="
+ },
+ "pushNotifications": [],
+ "name": "Mój dom",
+ "icon": "home_1",
+ "clus": [
+  {
+   "serialNumber": "221005591",
+   "port": 1234,
+   "ip": "10.0.0.123",
+   "name": "CLU1",
+   "id": "CLU221005591",
+   "connectionType": "LOCAL_ONLY"
+  }
+ ],
+ "theme": "STEEL",
+ "id": "31dd224d-f68d-45f4-83ea-77784f686958",
+ "version": 193900
+}
