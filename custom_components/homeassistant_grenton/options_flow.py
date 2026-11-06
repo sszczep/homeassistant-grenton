@@ -100,7 +100,10 @@ class GrentonOptionsFlow(OptionsFlowWithReload):
         if has_manual:
             menu.insert(4, "remove_object")
         try:
-            if self.hass.config_entries.async_entries("grenton_objects"):
+            source_entries = self.hass.config_entries.async_entries("grenton_objects")
+            if isinstance(source_entries, list) and any(
+                getattr(e, "domain", None) == "grenton_objects" for e in source_entries
+            ):
                 menu.append("import_grenton_objects")
         except AttributeError:  # flow not bound to hass yet
             pass
