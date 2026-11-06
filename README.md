@@ -88,6 +88,44 @@ After initial setup, you can customize individual entities:
 
 The integration intelligently filters available options based on your selections and automatically skips unnecessary configuration steps.
 
+### Custom names and areas
+
+During setup (and reconfiguration) you can tick **Customize names and areas**.
+You then get one form per interface page: the page becomes the suggested area
+and every widget gets a name field prefilled from its label.
+
+### Manually added objects (UDP or Gate HTTP)
+
+Objects that are not widgets in the myGrenton interface can be added in
+**Configure → Add object manually** using the `CLU->OBJECT` identifier
+(e.g. `CLU221001234->DOU5678`, `CLU221001234->myScript` for a button,
+`CLU221001234->myFeature` for a user feature/variable).
+
+Supported kinds: switch / on-off light (DOUT), dimmer (DIMMER), roller shutter,
+thermostat (THERMOSTAT → climate), sensor, binary sensor, script button.
+
+Each object chooses its connection:
+
+| Connection | Requirements | State updates |
+|---|---|---|
+| **UDP** | CLU present in the imported interface | instant (CLU subscription) |
+| **Gate HTTP** | GATE HTTP module + HttpListener below | polling (Gate settings) |
+
+#### Gate HTTP setup
+
+1. On the Gate create an `HttpListener` virtual object named
+   `HA_Integration_Listener`, path `/HAlistener`, ResponseType `JSON`.
+2. Attach a script to its `OnRequest` event that evaluates each JSON value as
+   Lua and returns the results under the same keys, plus `g_status = "OK"`.
+   The format is compatible with the listener used by
+   [Grenton Objects](https://github.com/jnalepka/grenton-objects-home-assistant),
+   so an existing listener can be reused as is.
+3. In **Configure → Gate HTTP settings** enter the listener URL,
+   e.g. `http://192.168.1.50/HAlistener`.
+
+> ⚠️ Such a listener executes any Lua it receives, without authentication.
+> Keep the Gate in a trusted network segment and never expose it to the internet.
+
 ## 🎨 Device Classes & Units
 
 ### Sensor Device Classes

@@ -97,12 +97,56 @@
         "data": {
           "device_class": "Klasa urządzenia"
         }
+      },
+      "init": {
+        "title": "Opcje Grenton",
+        "menu_options": {
+          "entity_list": "Konfiguruj encje",
+          "add_object": "Dodaj obiekt ręcznie",
+          "remove_object": "Usuń ręczne obiekty",
+          "gate_settings": "Ustawienia Gate HTTP"
+        }
+      },
+      "add_object": {
+        "title": "Dodaj obiekt Grenton",
+        "description": "Identyfikator w formacie CLU->OBIEKT, np. CLU221001234->DOU5678 (dla przycisku: CLU->nazwaSkryptu, dla zmiennej: CLU->nazwaCechy). UDP działa dla CLU z interfejsu myGrenton i daje stan na bieżąco; Gate HTTP wymaga skonfigurowanego listenera i odpytuje cyklicznie.",
+        "data": {
+          "kind": "Typ",
+          "name": "Nazwa",
+          "grenton_id": "Identyfikator Grenton",
+          "transport": "Połączenie",
+          "area": "Obszar (opcjonalnie)",
+          "index": "Indeks cechy (czujniki)",
+          "variable": "Zmienna/cecha użytkownika zamiast cechy obiektu (czujniki)",
+          "reversed": "Odwróć stan (czujnik binarny)",
+          "tilt": "Lamele (roleta)"
+        }
+      },
+      "remove_object": {
+        "title": "Usuń ręczne obiekty",
+        "data": {
+          "objects": "Obiekty do usunięcia"
+        }
+      },
+      "gate_settings": {
+        "title": "Gate HTTP",
+        "description": "Adres listenera HA_Integration_Listener, np. http://192.168.1.50/HAlistener. Puste pole wyłącza Gate.",
+        "data": {
+          "url": "Adres URL listenera",
+          "scan_interval": "Interwał odpytywania (s)"
+        }
       }
     },
     "abort": {
       "no_configurable_entities": "Nie znaleziono konfigurowalnych encji.",
       "entity_not_found": "Wybrana encja nie została znaleziona.",
       "entity_not_configurable": "Ta encja nie może być skonfigurowana."
+    },
+    "error": {
+      "invalid_grenton_id": "Nieprawidłowy identyfikator. Użyj formatu CLU->OBIEKT.",
+      "clu_not_in_interface": "Tego CLU nie ma w interfejsie myGrenton. Wybierz połączenie Gate HTTP.",
+      "gate_not_configured": "Najpierw skonfiguruj Gate HTTP w opcjach.",
+      "cannot_connect_gate": "Brak odpowiedzi od listenera Gate HTTP pod tym adresem."
     }
   },
   "services": {
@@ -331,6 +375,24 @@
         "weight": "Waga",
         "wind_direction": "Kierunek wiatru",
         "wind_speed": "Prędkość wiatru"
+      }
+    },
+    "manual_kind": {
+      "options": {
+        "switch": "Przełącznik (DOUT)",
+        "light": "Światło on/off (DOUT)",
+        "dimmer": "Ściemniacz (DIMMER)",
+        "cover": "Roleta (ROLLER_SHUTTER)",
+        "climate": "Termostat (THERMOSTAT)",
+        "sensor": "Czujnik / wartość",
+        "binary_sensor": "Czujnik binarny (DIN)",
+        "button": "Przycisk – skrypt"
+      }
+    },
+    "manual_transport": {
+      "options": {
+        "udp": "UDP (interfejs myGrenton)",
+        "gate": "Gate HTTP"
       }
     }
   }

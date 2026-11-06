@@ -35,12 +35,18 @@ class BaseGrentonDevice(ABC):
         """Set device name/area and propagate the device info to entities.
 
         Mappers hand entities a device_info snapshot, so it is refreshed here.
-        An entity whose label equals the device name becomes the device's
-        main entity (name=None) to avoid friendly names like "Lampa Lampa".
+        The only entity of a device, or one whose label equals the device
+        name, becomes the device's main entity (name=None): it follows a
+        custom device name and avoids friendly names like "Lampa Lampa".
         """
         self.name = name
         self.suggested_area = suggested_area
         info = self.device_info
+        single = len(self.entities) == 1
+        # Several entities sharing the device name (e.g. multisensor) keep labels
+        same_as_device = [e for e in self.entities if e.label.strip() == name]
         for entity in self.entities:
             entity._attr_device_info = info  # pyright: ignore[reportPrivateUsage]
-            entity.use_device_name = bool(name) and entity.label.strip() == name
+            entity.use_device_name = bool(name) and (
+                single or (len(same_as_device) == 1 and entity is same_as_device[0])
+            )

@@ -9,6 +9,8 @@ from .integration_config import GrentonConfigEntry, GrentonConfigEntryData, Runt
 from .coordinator import GrentonCoordinator
 from .mappers.device_mapper import DeviceMapper
 from .naming import CONF_DEVICE_NAMES, CONF_PAGE_AREAS
+from .gate import CONF_GATE, CONF_GATE_URL, CONF_GATE_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL, GrentonGateCoordinator
+from .manual_objects import CONF_MANUAL_OBJECTS, TRANSPORT_GATE, build_manual_devices
 
 from .dto.mobile_interface import GrentonMobileInterfaceDto
 from .domain.encryption import GrentonEncryption
@@ -16,7 +18,7 @@ from .domain.clu import GrentonClu
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS: list[Platform] = [Platform.SWITCH, Platform.SENSOR, Platform.LIGHT, Platform.BINARY_SENSOR, Platform.BUTTON, Platform.NUMBER, Platform.COVER, Platform.CAMERA]
+PLATFORMS: list[Platform] = [Platform.SWITCH, Platform.SENSOR, Platform.LIGHT, Platform.BINARY_SENSOR, Platform.BUTTON, Platform.NUMBER, Platform.COVER, Platform.CAMERA, Platform.CLIMATE]
 
 async def async_setup_entry(hass: HomeAssistant, config_entry: GrentonConfigEntry) -> bool:
     _LOGGER.debug("Initializing Home Assistant Grenton integration")
@@ -44,6 +46,21 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: GrentonConfigEntr
     )
 
     _LOGGER.debug("Mapped %d device(s) from mobile interface", len(devices))
+
+    # Manually added objects (UDP via interface CLUs, or Gate HTTP)
+    manual_definitions: list = list(config_entry.options.get(CONF_MANUAL_OBJECTS, []))
+    gate_options: dict = dict(config_entry.options.get(CONF_GATE) or {})
+    gate_coordinator: GrentonGateCoordinator | None = None
+    if gate_options.get(CONF_GATE_URL) and any(d.get("transport") == TRANSPORT_GATE for d in manual_definitions):
+        gate_coordinator = GrentonGateCoordinator(
+            hass,
+            config_entry,
+            gate_options[CONF_GATE_URL],
+            gate_options.get(CONF_GATE_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
+        )
+    manual_devices = build_manual_devices(manual_definitions, clus, coordinator, gate_coordinator, _LOGGER)
+    _LOGGER.debug("Built %d manual device(s)", len(manual_devices))
+    devices = devices + manual_devices
     _LOGGER.debug("Device details:")
     for device in devices:
         _LOGGER.debug("- Device %s (%s) with %d entity(ies)", device.type, device.id, len(device.entities))
@@ -52,17 +69,43 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: GrentonConfigEntr
             _LOGGER.debug("  - Entity %s", entity.name)
     
     # Store runtime data
-    config_entry.runtime_data = RuntimeData(coordinator=coordinator, devices=devices)
+    config_entry.runtime_data = RuntimeData(
+        coordinator=coordinator,
+        devices=devices,
+        gate_coordinator=gate_coordinator,
+        structural_options=_structural_options(config_entry),
+    )
+    config_entry.async_on_unload(config_entry.add_update_listener(_async_options_updated))
 
     # Drop entities and devices that no longer exist in the freshly fetched interface
     _cleanup_orphans(hass, config_entry, devices)
 
     # Setup the coordinator
     await coordinator.async_setup()
+    if gate_coordinator is not None:
+        # Not first_refresh: an offline Gate must not block the UDP part.
+        await gate_coordinator.async_refresh()
 
     await hass.config_entries.async_forward_entry_setups(config_entry, PLATFORMS)
 
     return True
+
+
+def _structural_options(config_entry: ConfigEntry) -> tuple:
+    return (
+        repr(config_entry.options.get(CONF_MANUAL_OBJECTS, [])),
+        repr(config_entry.options.get(CONF_GATE) or {}),
+    )
+
+
+async def _async_options_updated(hass: HomeAssistant, config_entry: GrentonConfigEntry) -> None:
+    """Reload only when manual objects or Gate settings changed.
+
+    Per-entity configuration (device class, unit, ...) is also stored in
+    options but is applied live, so it must not trigger a reload.
+    """
+    if _structural_options(config_entry) != config_entry.runtime_data.structural_options:
+        hass.config_entries.async_schedule_reload(config_entry.entry_id)
 
 
 def _cleanup_orphans(

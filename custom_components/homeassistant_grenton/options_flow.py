@@ -3,8 +3,32 @@ from typing import Any
 
 import voluptuous as vol
 
+import uuid
+
 from homeassistant.config_entries import ConfigFlowResult, OptionsFlow
 from homeassistant.helpers import selector
+
+from .gate import (
+    CONF_GATE,
+    CONF_GATE_SCAN_INTERVAL,
+    CONF_GATE_URL,
+    DEFAULT_SCAN_INTERVAL,
+    GrentonGateClient,
+    GrentonGateError,
+)
+from .manual_objects import (
+    CONF_MANUAL_OBJECTS,
+    KINDS,
+    KIND_BINARY_SENSOR,
+    KIND_COVER,
+    KIND_SENSOR,
+    TRANSPORTS,
+    TRANSPORT_GATE,
+    TRANSPORT_UDP,
+    InvalidGrentonId,
+    find_interface_clu,
+    parse_grenton_id,
+)
 
 class GrentonOptionsFlow(OptionsFlow):
     """Handle options flow for Grenton integration."""
@@ -25,8 +49,123 @@ class GrentonOptionsFlow(OptionsFlow):
         raise AttributeError(name)
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
-        """Manage the options - show list of entities to configure."""
-        return await self.async_step_entity_list(user_input)
+        """Main options menu."""
+        menu = ["entity_list", "add_object", "gate_settings"]
+        if self.config_entry.options.get(CONF_MANUAL_OBJECTS):
+            menu.insert(2, "remove_object")
+        return self.async_show_menu(step_id="init", menu_options=menu)
+
+    # --- manual objects -----------------------------------------------------
+    def _options_with(self, key: str, value: Any) -> dict[str, Any]:
+        options = dict(self.config_entry.options)
+        options[key] = value
+        return options
+
+    async def async_step_add_object(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            try:
+                clu_name, _ = parse_grenton_id(user_input["grenton_id"])
+            except InvalidGrentonId:
+                errors["grenton_id"] = "invalid_grenton_id"
+            else:
+                transport = user_input["transport"]
+                if transport == TRANSPORT_UDP:
+                    clus = self.config_entry.runtime_data.coordinator.clus
+                    if find_interface_clu(clu_name, clus) is None:
+                        errors["grenton_id"] = "clu_not_in_interface"
+                elif not (self.config_entry.options.get(CONF_GATE) or {}).get(CONF_GATE_URL):
+                    errors["transport"] = "gate_not_configured"
+
+            if not errors:
+                kind = user_input["kind"]
+                definition: dict[str, Any] = {
+                    "id": uuid.uuid4().hex[:12],
+                    "kind": kind,
+                    "name": user_input["name"].strip(),
+                    "grenton_id": user_input["grenton_id"].strip(),
+                    "transport": user_input["transport"],
+                    "area": (user_input.get("area") or "").strip(),
+                }
+                if kind in (KIND_SENSOR, KIND_BINARY_SENSOR):
+                    definition["index"] = str(user_input.get("index") or "0").strip()
+                    definition["variable"] = bool(user_input.get("variable"))
+                if kind == KIND_BINARY_SENSOR:
+                    definition["reversed"] = bool(user_input.get("reversed"))
+                if kind == KIND_COVER:
+                    definition["tilt"] = bool(user_input.get("tilt"))
+                objects = list(self.config_entry.options.get(CONF_MANUAL_OBJECTS, []))
+                objects.append(definition)
+                return self.async_create_entry(title="", data=self._options_with(CONF_MANUAL_OBJECTS, objects))
+
+        defaults = user_input or {}
+        schema = vol.Schema({
+            vol.Required("kind", default=defaults.get("kind", KINDS[0])): selector.SelectSelector(  # type: ignore[misc]
+                selector.SelectSelectorConfig(options=KINDS, translation_key="manual_kind",
+                                              mode=selector.SelectSelectorMode.DROPDOWN)
+            ),
+            vol.Required("name", default=defaults.get("name", "")): str,
+            vol.Required("grenton_id", default=defaults.get("grenton_id", "")): str,
+            vol.Required("transport", default=defaults.get("transport", TRANSPORT_UDP)): selector.SelectSelector(  # type: ignore[misc]
+                selector.SelectSelectorConfig(options=TRANSPORTS, translation_key="manual_transport",
+                                              mode=selector.SelectSelectorMode.LIST)
+            ),
+            vol.Optional("area", default=defaults.get("area", "")): str,
+            vol.Optional("index", default=defaults.get("index", "0")): str,
+            vol.Optional("variable", default=defaults.get("variable", False)): bool,
+            vol.Optional("reversed", default=defaults.get("reversed", False)): bool,
+            vol.Optional("tilt", default=defaults.get("tilt", False)): bool,
+        })
+        return self.async_show_form(step_id="add_object", data_schema=schema, errors=errors)
+
+    async def async_step_remove_object(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        objects: list[dict[str, Any]] = list(self.config_entry.options.get(CONF_MANUAL_OBJECTS, []))
+        if user_input is not None:
+            remove = set(user_input.get("objects") or [])
+            kept = [o for o in objects if o.get("id") not in remove]
+            return self.async_create_entry(title="", data=self._options_with(CONF_MANUAL_OBJECTS, kept))
+
+        options = [
+            selector.SelectOptionDict(value=o["id"], label=f"{o['name']} ({o['grenton_id']}, {o['transport']})")
+            for o in objects
+        ]
+        return self.async_show_form(
+            step_id="remove_object",
+            data_schema=vol.Schema({
+                vol.Required("objects"): selector.SelectSelector(  # type: ignore[misc]
+                    selector.SelectSelectorConfig(options=options, multiple=True,
+                                                  mode=selector.SelectSelectorMode.LIST)
+                ),
+            }),
+        )
+
+    async def async_step_gate_settings(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        current: dict[str, Any] = dict(self.config_entry.options.get(CONF_GATE) or {})
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            url = user_input.get(CONF_GATE_URL, "").strip()
+            if url:
+                if not url.startswith(("http://", "https://")):
+                    url = f"http://{url}"
+                try:
+                    await GrentonGateClient(self.hass, url).test()
+                except GrentonGateError:
+                    errors["base"] = "cannot_connect_gate"
+            if not errors:
+                gate = {CONF_GATE_URL: url, CONF_GATE_SCAN_INTERVAL: int(user_input[CONF_GATE_SCAN_INTERVAL])}
+                return self.async_create_entry(title="", data=self._options_with(CONF_GATE, gate))
+
+        return self.async_show_form(
+            step_id="gate_settings",
+            data_schema=vol.Schema({
+                vol.Optional(CONF_GATE_URL, default=current.get(CONF_GATE_URL, "")): str,
+                vol.Required(
+                    CONF_GATE_SCAN_INTERVAL,
+                    default=current.get(CONF_GATE_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
+                ): vol.All(vol.Coerce(int), vol.Range(min=2, max=3600)),
+            }),
+            errors=errors,
+        )
 
     async def async_step_entity_list(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Show list of configurable entities."""
