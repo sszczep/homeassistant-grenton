@@ -125,7 +125,7 @@ class GrentonOptionsFlow(OptionsFlow):
         
         # Merge flow-level and schema-specific placeholders
         placeholders: dict[str, Any] = {
-            "entity_name": entity.name,
+            "entity_name": entity.label,
             "step_number": str(self.current_step_index + 1),
             "total_steps": str(len(steps)),
             "custom_description": custom_description,

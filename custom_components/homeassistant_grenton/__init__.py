@@ -8,6 +8,7 @@ from homeassistant.helpers import device_registry as dr, entity_registry as er
 from .integration_config import GrentonConfigEntry, GrentonConfigEntryData, RuntimeData
 from .coordinator import GrentonCoordinator
 from .mappers.device_mapper import DeviceMapper
+from .naming import CONF_DEVICE_NAMES, CONF_PAGE_AREAS
 
 from .dto.mobile_interface import GrentonMobileInterfaceDto
 from .domain.encryption import GrentonEncryption
@@ -35,7 +36,12 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: GrentonConfigEntr
         _LOGGER.debug("- CLU %s (%s) at %s:%d", clu.name, clu.serial_number, clu.ip, clu.port)
     
     # Map mobile interface DTO to devices
-    devices = DeviceMapper.from_mobile_interface(mobile_interface_dto, coordinator)
+    devices = DeviceMapper.from_mobile_interface(
+        mobile_interface_dto,
+        coordinator,
+        device_names=config_entry.data.get(CONF_DEVICE_NAMES),
+        page_areas=config_entry.data.get(CONF_PAGE_AREAS),
+    )
 
     _LOGGER.debug("Mapped %d device(s) from mobile interface", len(devices))
     _LOGGER.debug("Device details:")

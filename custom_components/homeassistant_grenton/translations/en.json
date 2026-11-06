@@ -1,6 +1,5 @@
 {
   "title": "Grenton Home Assistant",
-
   "config": {
     "step": {
       "user": {
@@ -20,6 +19,20 @@
           "port": "Port",
           "pin": "PIN"
         }
+      },
+      "naming": {
+        "title": "Device names",
+        "description": "By default, names are created from widget labels and interface pages become areas. You can change them now, page by page.",
+        "data": {
+          "customize_names": "Customize names and areas"
+        }
+      },
+      "page_names": {
+        "title": "Page {step}/{total}: {page}",
+        "description": "Widgets: {count}. Empty field = default name. Empty area = no area assigned.",
+        "data": {
+          "area": "Area"
+        }
       }
     },
     "error": {
@@ -30,10 +43,10 @@
     },
     "abort": {
       "reconfigure_successful": "Interface refreshed successfully.",
-      "wrong_interface": "The fetched interface belongs to a different installation than the one being reconfigured."
+      "wrong_interface": "The fetched interface belongs to a different installation than the one being reconfigured.",
+      "invalid_data": "Could not parse the interface."
     }
   },
-
   "options": {
     "step": {
       "entity_list": {
@@ -92,7 +105,6 @@
       "entity_not_configurable": "This entity cannot be configured."
     }
   },
-
   "services": {
     "run_scene": {
       "name": "Run scene",
@@ -105,7 +117,6 @@
       }
     }
   },
-
   "device": {
     "scene": {
       "name": "Scene"
@@ -150,7 +161,6 @@
       "name": "Camera"
     }
   },
-
   "entity": {
     "sensor": {
       "roller_shutter_state": {
@@ -164,7 +174,6 @@
       }
     }
   },
-
   "selector": {
     "slider_modes": {
       "options": {
