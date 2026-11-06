@@ -185,6 +185,20 @@ async def test_options_flow(hass: HomeAssistant, aioclient_mock):
         assert result["type"] == FlowResultType.CREATE_ENTRY
         await hass.async_block_till_done()
         assert entry.options["gate"] == {"url": GATE_URL, "scan_interval": 15}
+
+        # Enabling push generates a webhook id and keeps it on later saves
+        result = await hass.config_entries.options.async_init(entry.entry_id)
+        result = await hass.config_entries.options.async_configure(result["flow_id"], {"next_step_id": "gate_settings"})
+        result = await hass.config_entries.options.async_configure(result["flow_id"], {"url": GATE_URL, "scan_interval": 300, "push": True})
+        await hass.async_block_till_done()
+        hook = entry.options["gate"]["webhook_id"]
+        assert hook
+        result = await hass.config_entries.options.async_init(entry.entry_id)
+        result = await hass.config_entries.options.async_configure(result["flow_id"], {"next_step_id": "gate_settings"})
+        assert hook in result["description_placeholders"]["webhook_url"]
+        result = await hass.config_entries.options.async_configure(result["flow_id"], {"url": GATE_URL, "scan_interval": 300, "push": True})
+        await hass.async_block_till_done()
+        assert entry.options["gate"]["webhook_id"] == hook
         assert len(entry.options["manual_objects"]) == 1
 
         # Remove
@@ -229,3 +243,96 @@ async def test_config_flow_custom_names(hass: HomeAssistant):
         assert hass.states.get("switch.zyrandol") is not None
         dev = dr.async_get(hass).async_get_device(identifiers={("grenton", "w1")})
         assert dev.name == "Żyrandol"
+
+
+async def test_led_zwave_and_webhook(hass: HomeAssistant, aioclient_mock, hass_client_no_auth):
+    from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClientMockResponse
+
+    values = {"LED0001:get(0)": 0.5, "LED0001:get(6)": "#ff8000", "LED0001:get(15)": 0,
+              "ZWA0001:get(2)": 0, "ZWA0001:get(4)": 40, "ZWA0002:get(0)": 128, "LED0002:get(15)": 0}
+
+    async def reply(method, url, data):
+        out = {"g_status": "OK"}
+        for k, lua in data.items():
+            if k in ("status", "command"):
+                out[k] = 1
+                continue
+            out[k] = next((v for key, v in values.items() if key in lua), None)
+        return AiohttpClientMockResponse(method, url, json=out)
+
+    aioclient_mock.get(GATE_URL, side_effect=reply)
+    options = {
+        "gate": {"url": GATE_URL, "scan_interval": 300, "webhook_id": "hook123"},
+        "manual_objects": [
+            {"id": "led", "kind": "led_rgbw", "name": "Taśma", "grenton_id": "CLU9->LED0001", "transport": "gate"},
+            {"id": "zc", "kind": "cover", "name": "Roleta ZW", "grenton_id": "CLU9->ZWA0001", "transport": "gate", "tilt": True},
+            {"id": "zd", "kind": "dimmer", "name": "Kinkiet ZW", "grenton_id": "CLU9->ZWA0002", "transport": "gate"},
+            {"id": "ch", "kind": "led_channel", "name": "Biały", "grenton_id": "CLU9->LED0002", "transport": "gate", "channel": "w"},
+        ],
+    }
+    entry = MockConfigEntry(domain="grenton", unique_id="iface1", title="iface1",
+                            data={"ip_address": "x", "port": "9998", "pin": "1", "interface": INTERFACE},
+                            options=options)
+    entry.add_to_hass(hass)
+    api = "custom_components.grenton.domain.api.clu.GrentonCluApi"
+
+    async def register(self, keys):
+        return [0 for _ in keys]
+
+    with patch(f"{api}.connect", AsyncMock(return_value=True)), \
+         patch(f"{api}.ping", AsyncMock(return_value=True)), \
+         patch(f"{api}.register_component_states", register), \
+         patch(f"{api}.disconnect", AsyncMock()):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+        led = hass.states.get("light.tasma")
+        assert led.state == "on"
+        assert led.attributes["color_mode"] == "rgb"
+        assert led.attributes["rgb_color"] == (255, 128, 0)
+        assert led.attributes["brightness"] == 128
+        cover = hass.states.get("cover.roleta_zw")
+        assert cover.attributes["current_position"] == 40
+        assert "current_tilt_position" not in cover.attributes  # no tilt for Z-Wave
+        assert hass.states.get("light.kinkiet_zw").attributes["brightness"] == 128
+        assert hass.states.get("light.bialy").state == "off"
+
+        def commands_since(n):
+            return [c[2]["command"] for c in aioclient_mock.mock_calls[n:] if "command" in c[2]]
+
+        n = aioclient_mock.call_count
+        await hass.services.async_call("light", "turn_on",
+                                       {"entity_id": "light.tasma", "rgb_color": [0, 0, 255], "brightness": 255}, blocking=True)
+        assert commands_since(n) == [
+            'CLU9:execute(0, "LED0001:execute(6,\\"#0000ff\\")")',
+            'CLU9:execute(0, "LED0001:execute(12,0)")',
+            'CLU9:execute(0, "LED0001:execute(0,1)")',
+        ]
+        n = aioclient_mock.call_count
+        await hass.services.async_call("light", "turn_on", {"entity_id": "light.tasma", "white": 200}, blocking=True)
+        assert commands_since(n) == ['CLU9:execute(0, "LED0001:execute(0,0)")', 'CLU9:execute(0, "LED0001:execute(12,200)")']
+        n = aioclient_mock.call_count
+        await hass.services.async_call("cover", "set_cover_position", {"entity_id": "cover.roleta_zw", "position": 70}, blocking=True)
+        assert commands_since(n) == ['CLU9:execute(0, "ZWA0001:execute(7,70)")']
+        n = aioclient_mock.call_count
+        await hass.services.async_call("light", "turn_on", {"entity_id": "light.bialy", "brightness": 100}, blocking=True)
+        assert commands_since(n) == ['CLU9:execute(0, "LED0002:execute(12,100)")']
+
+        # Webhook push updates state without polling
+        client = await hass_client_no_auth()
+        resp = await client.post("/api/webhook/hook123", json=[
+            {"id": "CLU9->ZWA0001", "index": 4, "value": 90},
+            {"clu": "CLU9", "object": "LED0002", "index": 15, "value": 255},
+            {"clu": "CLU9", "object": "UNKNOWN", "index": 0, "value": 1},
+        ])
+        assert resp.status == 200
+        assert (await resp.json())["applied"] == 2
+        await hass.async_block_till_done()
+        assert hass.states.get("cover.roleta_zw").attributes["current_position"] == 90
+        assert hass.states.get("light.bialy").state == "on"
+
+        await hass.config_entries.async_unload(entry.entry_id)
+        await hass.async_block_till_done()
+        resp = await client.post("/api/webhook/hook123", json={"clu": "CLU9", "object": "ZWA0001", "index": 4, "value": 1})
+        assert resp.status == 200  # unregistered webhooks answer 200 but do nothing
+        assert (await resp.text()) == ""

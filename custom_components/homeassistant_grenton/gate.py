@@ -28,7 +28,11 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 
 from .domain.action import GrentonAction
 from .domain.api.clu_messages import GrentonCluApiActionRequest
-from .domain.state_object import GrentonStateObject, GrentonVariableValueObject
+from .domain.state_object import (
+    GrentonAttributeValueObject,
+    GrentonStateObject,
+    GrentonVariableValueObject,
+)
 from .state import GrentonValue
 
 _LOGGER = logging.getLogger(__name__)
@@ -36,6 +40,7 @@ _LOGGER = logging.getLogger(__name__)
 CONF_GATE = "gate"
 CONF_GATE_URL = "url"
 CONF_GATE_SCAN_INTERVAL = "scan_interval"
+CONF_GATE_WEBHOOK_ID = "webhook_id"
 DEFAULT_SCAN_INTERVAL = 10
 REQUEST_TIMEOUT = 10
 # Keys evaluated per HTTP request; keeps a single Lua run on the Gate short.
@@ -123,6 +128,40 @@ class GrentonGateCoordinator(DataUpdateCoordinator[dict[tuple[str, str, str, str
             _LOGGER.error("[gate] Action %s failed: %s", lua, err)
             return
         await self.async_request_refresh()
+
+    # --- push (webhook) ----------------------------------------------------
+    def push_updates(self, updates: list[dict[str, Any]]) -> int:
+        """Apply values pushed by the Gate; returns the number of known keys updated.
+
+        Accepted items:
+            {"clu": "CLU1", "object": "DOU1", "index": 0, "value": 1}
+            {"id": "CLU1->DOU1", "index": 0, "value": 1}
+            {"clu": "CLU1", "variable": "feature", "value": 21.5}
+        """
+        data = dict(self.data or {})
+        applied = 0
+        for item in updates:
+            if not isinstance(item, dict) or "value" not in item:
+                continue
+            clu, obj = item.get("clu"), item.get("object")
+            if item.get("id") and "->" in str(item["id"]):
+                clu, obj = (part.strip() for part in str(item["id"]).split("->", 1))
+            if not clu:
+                continue
+            if item.get("variable"):
+                name = str(item["variable"])
+                key = _state_key(GrentonVariableValueObject(clu_id=str(clu), object_name=name, index=name))
+            elif obj is not None:
+                key = _state_key(GrentonAttributeValueObject(
+                    clu_id=str(clu), object_name=str(obj), index=str(item.get("index", 0))))
+            else:
+                continue
+            if key in self._states:
+                data[key] = item["value"]
+                applied += 1
+        if applied:
+            self.async_set_updated_data(data)
+        return applied
 
     # --- polling ------------------------------------------------------------
     async def _async_update_data(self) -> dict[tuple[str, str, str, str], GrentonValue]:

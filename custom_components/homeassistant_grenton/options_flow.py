@@ -12,6 +12,7 @@ from .gate import (
     CONF_GATE,
     CONF_GATE_SCAN_INTERVAL,
     CONF_GATE_URL,
+    CONF_GATE_WEBHOOK_ID,
     DEFAULT_SCAN_INTERVAL,
     GrentonGateClient,
     GrentonGateError,
@@ -21,7 +22,9 @@ from .manual_objects import (
     KINDS,
     KIND_BINARY_SENSOR,
     KIND_COVER,
+    KIND_LED_CHANNEL,
     KIND_SENSOR,
+    LED_CHANNELS,
     TRANSPORTS,
     TRANSPORT_GATE,
     TRANSPORT_UDP,
@@ -94,6 +97,8 @@ class GrentonOptionsFlow(OptionsFlow):
                     definition["reversed"] = bool(user_input.get("reversed"))
                 if kind == KIND_COVER:
                     definition["tilt"] = bool(user_input.get("tilt"))
+                if kind == KIND_LED_CHANNEL:
+                    definition["channel"] = user_input.get("channel") or "w"
                 objects = list(self.config_entry.options.get(CONF_MANUAL_OBJECTS, []))
                 objects.append(definition)
                 return self.async_create_entry(title="", data=self._options_with(CONF_MANUAL_OBJECTS, objects))
@@ -115,6 +120,10 @@ class GrentonOptionsFlow(OptionsFlow):
             vol.Optional("variable", default=defaults.get("variable", False)): bool,
             vol.Optional("reversed", default=defaults.get("reversed", False)): bool,
             vol.Optional("tilt", default=defaults.get("tilt", False)): bool,
+            vol.Optional("channel", default=defaults.get("channel", "w")): selector.SelectSelector(  # type: ignore[misc]
+                selector.SelectSelectorConfig(options=LED_CHANNELS, translation_key="led_channel",
+                                              mode=selector.SelectSelectorMode.DROPDOWN)
+            ),
         })
         return self.async_show_form(step_id="add_object", data_schema=schema, errors=errors)
 
@@ -152,7 +161,13 @@ class GrentonOptionsFlow(OptionsFlow):
                 except GrentonGateError:
                     errors["base"] = "cannot_connect_gate"
             if not errors:
-                gate = {CONF_GATE_URL: url, CONF_GATE_SCAN_INTERVAL: int(user_input[CONF_GATE_SCAN_INTERVAL])}
+                gate: dict[str, Any] = {
+                    CONF_GATE_URL: url,
+                    CONF_GATE_SCAN_INTERVAL: int(user_input[CONF_GATE_SCAN_INTERVAL]),
+                }
+                if user_input.get("push"):
+                    from homeassistant.components import webhook
+                    gate[CONF_GATE_WEBHOOK_ID] = current.get(CONF_GATE_WEBHOOK_ID) or webhook.async_generate_id()
                 return self.async_create_entry(title="", data=self._options_with(CONF_GATE, gate))
 
         return self.async_show_form(
@@ -163,9 +178,21 @@ class GrentonOptionsFlow(OptionsFlow):
                     CONF_GATE_SCAN_INTERVAL,
                     default=current.get(CONF_GATE_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
                 ): vol.All(vol.Coerce(int), vol.Range(min=2, max=3600)),
+                vol.Optional("push", default=bool(current.get(CONF_GATE_WEBHOOK_ID))): bool,
             }),
             errors=errors,
+            description_placeholders={"webhook_url": self._webhook_url(current.get(CONF_GATE_WEBHOOK_ID))},
         )
+
+    def _webhook_url(self, webhook_id: str | None) -> str:
+        if not webhook_id:
+            return "—"
+        from homeassistant.helpers.network import NoURLAvailableError, get_url
+        try:
+            base = get_url(self.hass, allow_external=False, prefer_external=False)
+        except NoURLAvailableError:
+            base = "http://<adres-HA>:8123"
+        return f"{base}/api/webhook/{webhook_id}"
 
     async def async_step_entity_list(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Show list of configurable entities."""

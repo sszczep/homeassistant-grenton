@@ -101,8 +101,11 @@ Objects that are not widgets in the myGrenton interface can be added in
 (e.g. `CLU221001234->DOU5678`, `CLU221001234->myScript` for a button,
 `CLU221001234->myFeature` for a user feature/variable).
 
-Supported kinds: switch / on-off light (DOUT), dimmer (DIMMER), roller shutter,
-thermostat (THERMOSTAT → climate), sensor, binary sensor, script button.
+Supported kinds: switch / on-off light (DOUT), dimmer (DIMMER), LED RGB,
+LED RGBW, single LED channel (R/G/B/W), roller shutter, thermostat
+(THERMOSTAT → climate), sensor, binary sensor, script button. Z-Wave objects
+(`ZWA…`) are detected by name and use their own indexes (dimmer, LED colour,
+roller shutter without tilt).
 
 Each object chooses its connection:
 
@@ -122,6 +125,34 @@ Each object chooses its connection:
    so an existing listener can be reused as is.
 3. In **Configure → Gate HTTP settings** enter the listener URL,
    e.g. `http://192.168.1.50/HAlistener`.
+
+#### Instant updates from the Gate (webhook)
+
+Polling works out of the box. For instant state changes enable
+**Receive changes from the Gate via webhook** in the Gate settings; the form
+then shows the webhook URL (`http://<HA>:8123/api/webhook/<id>`, LAN only).
+The Gate sends a JSON `POST` with one update or a list of them:
+
+```json
+{"clu": "CLU221001234", "object": "DOU5678", "index": 0, "value": 1}
+[{"id": "CLU221001234->THE0001", "index": 12, "value": 21.5},
+ {"clu": "CLU221001234", "variable": "trybDomu", "value": 2}]
+```
+
+Example on the Gate: an `HttpRequest` virtual object `HA_Webhook`
+(Host `http://<HA>:8123`, Path `/api/webhook/<id>`, Method `POST`,
+RequestType/ResponseType `JSON`) and a script `HA_Push(clu, object, index, value)`:
+
+```lua
+GATE_HTTP->HA_Webhook->SetRequestBody({clu = clu, object = object, index = index, value = value})
+GATE_HTTP->HA_Webhook->SendRequest()
+```
+
+Call it from the object's `OnValueChange` event, e.g.
+`GATE_HTTP->HA_Push("CLU221001234", "DOU5678", 0, CLU221001234->DOU5678->Value)`.
+An `HttpRequest` sends one request at a time, so events that arrive while it
+is busy can be lost; polling stays active as a fallback (a long interval such
+as 300 s is enough).
 
 > ⚠️ Such a listener executes any Lua it receives, without authentication.
 > Keep the Gate in a trusted network segment and never expose it to the internet.

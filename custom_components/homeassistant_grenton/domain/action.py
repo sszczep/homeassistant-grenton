@@ -105,6 +105,7 @@ def lua_value(action: GrentonAction) -> str:
     """
     numeric = isinstance(action, (GrentonActionAttributeNumeric, GrentonActionMethodNumeric))
     if numeric and _is_number(action.value):
-        return str(action.value)
+        number = float(action.value)
+        return str(int(number)) if number.is_integer() else repr(number)
     escaped = str(action.value).replace("\\", "\\\\").replace('"', '\\"')
     return f'"{escaped}"'

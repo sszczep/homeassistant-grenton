@@ -12,7 +12,11 @@ Definitions live in config entry options under CONF_MANUAL_OBJECTS:
         "index": "0",                    # sensor / binary_sensor feature index
         "variable": false,               # sensor: read getVar("<object>") instead
         "reversed": false,               # binary_sensor
+        "tilt": false,                   # cover (not for Z-Wave)
+        "channel": "w",                  # led_channel: r / g / b / w
     }
+
+Z-Wave objects (ZWA...) are detected by name and use their own indexes.
 
 Each definition becomes one device with one entity. Entities are the same
 classes used for interface widgets; only the coordinator (UDP or Gate)
@@ -35,6 +39,7 @@ from .domain.entities.base import BaseGrentonEntity
 from .domain.entities.binary_sensor import GrentonEntityBinarySensor
 from .domain.entities.bistable_switch import GrentonEntityBistableSwitch
 from .domain.entities.dimmer import GrentonEntityDimmer
+from .domain.entities.led_hex import GrentonEntityLedHex
 from .domain.entities.onoff_light import GrentonEntityOnOffLight
 from .domain.entities.roller_shutter_v3 import GrentonEntityRollerShutterV3
 from .domain.entities.scene_button import GrentonEntitySceneButton
@@ -55,22 +60,34 @@ TRANSPORTS = [TRANSPORT_UDP, TRANSPORT_GATE]
 
 KIND_SWITCH = "switch"            # DOUT and similar: get(0), set(0, 1/0)
 KIND_LIGHT = "light"              # DOUT driving a lamp
-KIND_DIMMER = "dimmer"            # DIMMER: get(0) 0..1, set(0, x)
+KIND_DIMMER = "dimmer"            # DIMMER: get(0) 0..1, set(0, x); Z-Wave: 0..255, execute(0, x)
+KIND_LED_RGB = "led_rgb"          # LED RGB: brightness + colour
+KIND_LED_RGBW = "led_rgbw"        # LED RGBW: as RGB + white channel
+KIND_LED_CHANNEL = "led_channel"  # single R/G/B/W channel as a dimmable light
 KIND_COVER = "cover"              # ROLLER_SHUTTER
 KIND_CLIMATE = "climate"          # THERMOSTAT virtual object
 KIND_SENSOR = "sensor"            # any feature or user variable
 KIND_BINARY_SENSOR = "binary_sensor"
 KIND_BUTTON = "button"            # CLU script
 KINDS = [
-    KIND_SWITCH, KIND_LIGHT, KIND_DIMMER, KIND_COVER,
+    KIND_SWITCH, KIND_LIGHT, KIND_DIMMER, KIND_LED_RGB, KIND_LED_RGBW, KIND_LED_CHANNEL, KIND_COVER,
     KIND_CLIMATE, KIND_SENSOR, KIND_BINARY_SENSOR, KIND_BUTTON,
 ]
+
+LED_CHANNELS = ["r", "g", "b", "w"]
+# channel -> (set method index, read feature index); values 0..255
+_LED_CHANNEL_INDEX = {"r": (3, 3), "g": (4, 4), "b": (5, 5), "w": (12, 15)}
 
 _GRENTON_ID = re.compile(r"^\s*([A-Za-z_][A-Za-z0-9_]*)\s*->\s*([A-Za-z_][A-Za-z0-9_]*)\s*$")
 
 
 class InvalidGrentonId(ValueError):
     pass
+
+
+def is_zwave(object_name: str) -> bool:
+    """Z-Wave objects (ZWA...) use different feature/method indexes."""
+    return object_name.upper().startswith("ZWA")
 
 
 def parse_grenton_id(value: str) -> tuple[str, str]:
@@ -128,7 +145,16 @@ def build_entity(definition: dict[str, Any], coordinator: Any, clu_id: str, obje
             action_on=_set(clu_id, object_name, 0, "1", on),
             action_off=_set(clu_id, object_name, 0, "0", off),
         )
+    zwave = is_zwave(object_name)
     if kind == KIND_DIMMER:
+        if zwave:
+            return GrentonEntityDimmer(
+                coordinator=coordinator, id=uid, label=label, min=0, max=255, precision=0,
+                state_object=_attr(clu_id, object_name, 0),
+                action_on=_exec(clu_id, object_name, 0, "255", on),
+                action_off=_exec(clu_id, object_name, 0, "0", off),
+                action_set_value=_exec(clu_id, object_name, 0, "0"),
+            )
         return GrentonEntityDimmer(
             coordinator=coordinator, id=uid, label=label, min=0, max=1, precision=2,
             state_object=_attr(clu_id, object_name, 0),
@@ -136,7 +162,31 @@ def build_entity(definition: dict[str, Any], coordinator: Any, clu_id: str, obje
             action_off=_set(clu_id, object_name, 0, "0", off),
             action_set_value=_set(clu_id, object_name, 0, "0"),
         )
+    if kind in (KIND_LED_RGB, KIND_LED_RGBW):
+        return GrentonEntityLedHex(
+            coordinator=coordinator, id=uid, label=label, clu_id=clu_id, object_name=object_name,
+            white=kind == KIND_LED_RGBW, zwave=zwave,
+        )
+    if kind == KIND_LED_CHANNEL:
+        channel = str(definition.get("channel") or "w").lower()
+        set_index, read_index = _LED_CHANNEL_INDEX[channel]
+        return GrentonEntityDimmer(
+            coordinator=coordinator, id=uid, label=label, min=0, max=255, precision=0,
+            state_object=_attr(clu_id, object_name, read_index),
+            action_on=_exec(clu_id, object_name, set_index, "255", on),
+            action_off=_exec(clu_id, object_name, set_index, "0", off),
+            action_set_value=_exec(clu_id, object_name, set_index, "0"),
+        )
     if kind == KIND_COVER:
+        if zwave:
+            # Z-Wave roller shutter: state get(2), position get(4), set execute(7, p); no tilt
+            return GrentonEntityRollerShutterV3(
+                coordinator=coordinator, id=uid, label=label,
+                cover_state=_attr(clu_id, object_name, 2),
+                cover_position=_attr(clu_id, object_name, 4),
+                set_position=_exec(clu_id, object_name, 7),
+                stop=_exec(clu_id, object_name, 3),
+            )
         return GrentonEntityRollerShutterV3(
             coordinator=coordinator, id=uid, label=label,
             cover_state=_attr(clu_id, object_name, 0),

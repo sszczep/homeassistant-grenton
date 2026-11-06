@@ -9,7 +9,17 @@ from .integration_config import GrentonConfigEntry, GrentonConfigEntryData, Runt
 from .coordinator import GrentonCoordinator
 from .mappers.device_mapper import DeviceMapper
 from .naming import CONF_DEVICE_NAMES, CONF_PAGE_AREAS
-from .gate import CONF_GATE, CONF_GATE_URL, CONF_GATE_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL, GrentonGateCoordinator
+from homeassistant.components import webhook
+from aiohttp import web
+
+from .gate import (
+    CONF_GATE,
+    CONF_GATE_URL,
+    CONF_GATE_SCAN_INTERVAL,
+    CONF_GATE_WEBHOOK_ID,
+    DEFAULT_SCAN_INTERVAL,
+    GrentonGateCoordinator,
+)
 from .manual_objects import CONF_MANUAL_OBJECTS, TRANSPORT_GATE, build_manual_devices
 
 from .dto.mobile_interface import GrentonMobileInterfaceDto
@@ -85,10 +95,37 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: GrentonConfigEntr
     if gate_coordinator is not None:
         # Not first_refresh: an offline Gate must not block the UDP part.
         await gate_coordinator.async_refresh()
+        webhook_id = gate_options.get(CONF_GATE_WEBHOOK_ID)
+        if webhook_id:
+            _register_gate_webhook(hass, config_entry, webhook_id, gate_coordinator)
 
     await hass.config_entries.async_forward_entry_setups(config_entry, PLATFORMS)
 
     return True
+
+
+def _register_gate_webhook(
+    hass: HomeAssistant,
+    config_entry: ConfigEntry,
+    webhook_id: str,
+    gate_coordinator: GrentonGateCoordinator,
+) -> None:
+    """Receive state changes pushed by the Gate (HttpRequest -> /api/webhook/<id>)."""
+
+    async def handle(hass: HomeAssistant, webhook_id: str, request: web.Request) -> web.Response:
+        try:
+            body = await request.json()
+        except ValueError:
+            return web.json_response({"error": "invalid json"}, status=400)
+        updates = body if isinstance(body, list) else body.get("updates", [body]) if isinstance(body, dict) else []
+        applied = gate_coordinator.push_updates(updates)
+        return web.json_response({"g_status": "OK", "applied": applied})
+
+    webhook.async_register(
+        hass, "grenton", f"Grenton Gate ({config_entry.title})", webhook_id, handle,
+        local_only=True, allowed_methods=["POST"],
+    )
+    config_entry.async_on_unload(lambda: webhook.async_unregister(hass, webhook_id))
 
 
 def _structural_options(config_entry: ConfigEntry) -> tuple:

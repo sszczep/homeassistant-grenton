@@ -109,7 +109,7 @@
       },
       "add_object": {
         "title": "Dodaj obiekt Grenton",
-        "description": "Identyfikator w formacie CLU->OBIEKT, np. CLU221001234->DOU5678 (dla przycisku: CLU->nazwaSkryptu, dla zmiennej: CLU->nazwaCechy). UDP działa dla CLU z interfejsu myGrenton i daje stan na bieżąco; Gate HTTP wymaga skonfigurowanego listenera i odpytuje cyklicznie.",
+        "description": "Identyfikator w formacie CLU->OBIEKT, np. CLU221001234->DOU5678 (dla przycisku: CLU->nazwaSkryptu, dla zmiennej: CLU->nazwaCechy). UDP działa dla CLU z interfejsu myGrenton i daje stan na bieżąco; Gate HTTP wymaga skonfigurowanego listenera i odpytuje cyklicznie. Obiekty Z-Wave (ZWA…) są rozpoznawane automatycznie.",
         "data": {
           "kind": "Typ",
           "name": "Nazwa",
@@ -119,7 +119,8 @@
           "index": "Indeks cechy (czujniki)",
           "variable": "Zmienna/cecha użytkownika zamiast cechy obiektu (czujniki)",
           "reversed": "Odwróć stan (czujnik binarny)",
-          "tilt": "Lamele (roleta)"
+          "tilt": "Lamele (roleta)",
+          "channel": "Kanał (LED – jeden kanał)"
         }
       },
       "remove_object": {
@@ -130,10 +131,14 @@
       },
       "gate_settings": {
         "title": "Gate HTTP",
-        "description": "Adres listenera HA_Integration_Listener, np. http://192.168.1.50/HAlistener. Puste pole wyłącza Gate.",
+        "description": "Adres listenera HA_Integration_Listener, np. http://192.168.1.50/HAlistener. Puste pole wyłącza Gate.\n\nWebhook do wysyłania zmian z Gate (po zapisaniu z włączoną opcją): {webhook_url}",
         "data": {
           "url": "Adres URL listenera",
-          "scan_interval": "Interwał odpytywania (s)"
+          "scan_interval": "Interwał odpytywania (s)",
+          "push": "Odbieraj zmiany z Gate przez webhook"
+        },
+        "data_description": {
+          "scan_interval": "Przy włączonym webhooku odpytywanie jest tylko zabezpieczeniem – możesz ustawić dłuższy interwał, np. 300 s."
         }
       }
     },
@@ -381,18 +386,29 @@
       "options": {
         "switch": "Przełącznik (DOUT)",
         "light": "Światło on/off (DOUT)",
-        "dimmer": "Ściemniacz (DIMMER)",
-        "cover": "Roleta (ROLLER_SHUTTER)",
+        "dimmer": "Ściemniacz (DIMMER / Z-Wave)",
+        "cover": "Roleta (ROLLER_SHUTTER / Z-Wave)",
         "climate": "Termostat (THERMOSTAT)",
         "sensor": "Czujnik / wartość",
         "binary_sensor": "Czujnik binarny (DIN)",
-        "button": "Przycisk – skrypt"
+        "button": "Przycisk – skrypt",
+        "led_rgb": "LED RGB",
+        "led_rgbw": "LED RGBW (kolor + biały)",
+        "led_channel": "LED – jeden kanał (R/G/B/W)"
       }
     },
     "manual_transport": {
       "options": {
         "udp": "UDP (interfejs myGrenton)",
         "gate": "Gate HTTP"
+      }
+    },
+    "led_channel": {
+      "options": {
+        "r": "Czerwony (R)",
+        "g": "Zielony (G)",
+        "b": "Niebieski (B)",
+        "w": "Biały (W)"
       }
     }
   }
