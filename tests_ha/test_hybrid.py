@@ -535,3 +535,83 @@ async def test_import_entity_names_units_precision(hass: HomeAssistant):
         assert temp.attributes["friendly_name"] == "Temp. salon"
         assert precision("temp1_0") == 2
         await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_reconfigure_keeps_settings_and_refreshes_interface(hass: HomeAssistant, aioclient_mock):
+    """Reconfigure: new widgets appear, removed ones go, own settings survive."""
+    from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClientMockResponse
+
+    async def reply(method, url, data):
+        out = {"g_status": "OK"}
+        for k, lua in data.items():
+            out[k] = 1 if k in ("status", "command") else _gate_values(lua)
+        return AiohttpClientMockResponse(method, url, json=out)
+
+    aioclient_mock.get(GATE_URL, side_effect=reply)
+    old_interface = json.loads(json.dumps(INTERFACE))
+    old_interface["pages"][0]["widgets"].append(VALUE_V2)
+    entry = MockConfigEntry(
+        domain="grenton", unique_id="iface1", title="iface1",
+        data={"ip_address": "1.2.3.4", "port": "9998", "pin": "1", "interface": old_interface,
+              "device_names": {"w1": "Lampa sufitowa"}, "page_areas": {"Salon": "Salon"}},
+        options={**OPTIONS, "entity_overrides": {"temp1_0": {"precision": 1}}},
+    )
+    entry.add_to_hass(hass)
+
+    new_interface = json.loads(json.dumps(INTERFACE))  # VALUE_V2 removed ...
+    new_interface["pages"][0]["widgets"].append(VALUE_DOUBLE)  # ... VALUE_DOUBLE added
+
+    api = "custom_components.grenton.domain.api.clu.GrentonCluApi"
+    om = "custom_components.grenton.config_flow.GrentonObjectManagerApi"
+
+    class FakeOM:
+        def __init__(self, url): pass
+        async def __aenter__(self): return self
+        async def __aexit__(self, *a): return False
+        async def fetch_mobile_interface(self, pin): return new_interface
+
+    async def register(self, keys):
+        return [1 for _ in keys]
+
+    with patch(om, FakeOM), \
+         patch(f"{api}.connect", AsyncMock(return_value=True)), \
+         patch(f"{api}.ping", AsyncMock(return_value=True)), \
+         patch(f"{api}.register_component_states", register), \
+         patch(f"{api}.disconnect", AsyncMock()):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+        assert st(hass, "temp1_0") is not None
+
+        result = await entry.start_reconfigure_flow(hass)
+        assert result["step_id"] == "reconfigure"
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {"ip_address": "1.2.3.4", "port": "9998", "pin": "1"})
+        assert result["step_id"] == "naming"
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], {"customize_names": True})
+        assert result["step_id"] == "page_names"
+        # Current custom device name is prefilled
+        lamp_key = next(k for k in result["data_schema"].schema if "w1" in str(k))
+        pair_key = next(str(k) for k in result["data_schema"].schema if "pair1" in str(k))
+        lamp_fields = {str(k): k for k in result["data_schema"].schema[lamp_key].schema.schema}
+        assert lamp_fields["Name"].default() == "Lampa sufitowa"
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], {
+            "area": "Salon",
+            str(lamp_key): {"Name": "Lampa sufitowa"},
+            pair_key: {"Device name": "Klimat"},
+        })
+        assert result["type"] == FlowResultType.ABORT
+        assert result["reason"] == "reconfigure_successful"
+        await hass.async_block_till_done()
+
+        # Interface refreshed: removed widget gone, new one present
+        reg = er.async_get(hass)
+        assert reg.async_get_entity_id("sensor", "grenton", "temp1_0") is None
+        assert any(e.unique_id.startswith("pair1") for e in er.async_entries_for_config_entry(reg, entry.entry_id))
+        assert device(hass, "pair1").name == "Klimat"
+        assert st(hass, "w1_0").attributes["friendly_name"] == "Lampa sufitowa"
+        # Manual objects and Gate settings survive the reconfigure
+        assert st(hass, "manual_aaa") is not None
+        assert st(hass, "manual_bbb").state == "heat"
+        assert entry.options["gate"]["url"] == GATE_URL
+        assert entry.data["pin"] == "1"
+        await hass.config_entries.async_unload(entry.entry_id)
