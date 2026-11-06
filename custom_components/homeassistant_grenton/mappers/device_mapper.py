@@ -18,6 +18,7 @@ from ..dto.widgets.roller_shutter_v3 import GrentonWidgetRollerShutterV3Dto
 from ..dto.widgets.camera import GrentonWidgetCameraDto
 from ..dto.widgets.scene import GrentonWidgetSceneDto
 from ..dto.mobile_interface import GrentonMobileInterfaceDto
+from ..naming import resolve_device_name, resolve_page_area
 
 from .device_value_v2 import DeviceValueV2Mapper
 from .device_value_double import DeviceValueDoubleMapper
@@ -73,8 +74,18 @@ class DeviceMapper:
         raise ValueError(f"Unknown widget type: {type(dto)}")
 
     @staticmethod
-    def from_mobile_interface(dto: GrentonMobileInterfaceDto, coordinator: GrentonCoordinator) -> list[BaseGrentonDevice]:
-        """Convert mobile interface DTO to list of devices."""
-        widgets = [widget for page in dto.pages for widget in page.widgets]
-        devices = [DeviceMapper.to_domain(widget, coordinator) for widget in widgets]
+    def from_mobile_interface(
+        dto: GrentonMobileInterfaceDto,
+        coordinator: GrentonCoordinator,
+        device_names: dict[str, str] | None = None,
+        page_areas: dict[str, str] | None = None,
+    ) -> list[BaseGrentonDevice]:
+        """Convert mobile interface DTO to list of named devices."""
+        devices: list[BaseGrentonDevice] = []
+        for page in dto.pages:
+            area = resolve_page_area(page.name, page_areas)
+            for widget in page.widgets:
+                device = DeviceMapper.to_domain(widget, coordinator)
+                device.apply_naming(resolve_device_name(widget, device_names), area)
+                devices.append(device)
         return devices

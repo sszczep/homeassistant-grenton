@@ -1,6 +1,5 @@
 {
   "title": "Grenton Home Assistant",
-
   "config": {
     "step": {
       "user": {
@@ -20,6 +19,20 @@
           "port": "Port",
           "pin": "PIN"
         }
+      },
+      "naming": {
+        "title": "Nazwy urządzeń",
+        "description": "Nazwy zostaną domyślnie utworzone z etykiet widgetów, a strony interfejsu staną się obszarami. Możesz je teraz zmienić dla każdej strony.",
+        "data": {
+          "customize_names": "Dostosuj nazwy i obszary"
+        }
+      },
+      "page_names": {
+        "title": "Strona {step}/{total}: {page}",
+        "description": "Widgetów: {count}. Puste pole = nazwa domyślna. Pusty obszar = bez przypisania do obszaru.",
+        "data": {
+          "area": "Obszar"
+        }
       }
     },
     "error": {
@@ -30,10 +43,10 @@
     },
     "abort": {
       "reconfigure_successful": "Interfejs został pomyślnie odświeżony.",
-      "wrong_interface": "Pobrany interfejs należy do innej instalacji niż ta, która jest rekonfigurowana."
+      "wrong_interface": "Pobrany interfejs należy do innej instalacji niż ta, która jest rekonfigurowana.",
+      "invalid_data": "Nie udało się odczytać interfejsu."
     }
   },
-
   "options": {
     "step": {
       "entity_list": {
@@ -92,7 +105,6 @@
       "entity_not_configurable": "Ta encja nie może być skonfigurowana."
     }
   },
-
   "services": {
     "run_scene": {
       "name": "Uruchom scenę",
@@ -105,7 +117,6 @@
       }
     }
   },
-
   "device": {
     "scene": {
       "name": "Scena"
@@ -150,7 +161,6 @@
       "name": "Kamera"
     }
   },
-  
   "entity": {
     "sensor": {
       "roller_shutter_state": {
@@ -164,7 +174,6 @@
       }
     }
   },
-
   "selector": {
     "slider_modes": {
       "options": {
