@@ -17,6 +17,7 @@ from ..dto.widgets.roller_shutter import GrentonWidgetRollerShutterDto
 from ..dto.widgets.roller_shutter_v3 import GrentonWidgetRollerShutterV3Dto
 from ..dto.widgets.camera import GrentonWidgetCameraDto
 from ..dto.widgets.scene import GrentonWidgetSceneDto
+from ..dto.widgets.scene_double import GrentonWidgetSceneDoubleDto
 from ..dto.widgets.thermostat_v2 import GrentonWidgetThermostatV2Dto
 from ..dto.mobile_interface import GrentonMobileInterfaceDto
 from ..naming import resolve_page_area
@@ -35,6 +36,7 @@ from .device_roller_shutter import DeviceRollerShutterMapper
 from .device_roller_shutter_v3 import DeviceRollerShutterV3Mapper
 from .device_camera import DeviceCameraMapper
 from .device_scene import DeviceSceneMapper
+from .device_scene_double import DeviceSceneDoubleMapper
 from .device_thermostat_v2 import DeviceThermostatV2Mapper
 
 
@@ -86,6 +88,8 @@ class DeviceMapper:
             return DeviceThermostatV2Mapper.to_domain(dto, coordinator)
         if isinstance(dto, GrentonWidgetSceneDto): # type: ignore
             return DeviceSceneMapper.to_domain(dto, coordinator)
+        if isinstance(dto, GrentonWidgetSceneDoubleDto):
+            return DeviceSceneDoubleMapper.to_domain(dto, coordinator)
 
         raise ValueError(f"Unknown widget type: {type(dto)}")
 

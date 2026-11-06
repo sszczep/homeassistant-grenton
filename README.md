@@ -40,6 +40,7 @@ Custom Home Assistant integration for **Grenton Smart Home** system. Seamlessly 
 | **ROLLER_SHUTTER_V3** | Roller shutter V3 exposed as a single `cover` entity (position; lamel/tilt when available). |
 | **CAMERA** | Camera stream exposed as `camera`. |
 | **SCENE** | Scene buttons with configurable script, method, attribute, or variable actions and arguments. |
+| **SCENE_DOUBLE** | Two scene buttons (e.g. open/close) exposed as `button` entities, configurable like SCENE. The widget JSON is parsed tolerantly; if yours is skipped, attach the integration diagnostics to an issue. |
 
 See [Device specifications](#device-specifications) for detailed behavior and setup.
 

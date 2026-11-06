@@ -14,10 +14,14 @@ class BaseGrentonDevice(ABC):
     # Set from the import flow / manual objects; None keeps the label-based name
     custom_name: str | None = None
     suggested_area: str | None = None
+    # Widget-level label (when the widget has one), preferred over entity labels
+    widget_label: str | None = None
 
     @property
     def default_name(self) -> str:
-        """Summarize the widget using its distinct entity labels."""
+        """Summarize the widget using its own label or its distinct entity labels."""
+        if (self.widget_label or "").strip():
+            return self.widget_label.strip()  # type: ignore[union-attr]
         labels = list(
             dict.fromkeys(
                 entity.label.strip() for entity in self.entities if entity.label.strip()

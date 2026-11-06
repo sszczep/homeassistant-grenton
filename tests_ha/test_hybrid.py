@@ -615,3 +615,67 @@ async def test_reconfigure_keeps_settings_and_refreshes_interface(hass: HomeAssi
         assert entry.options["gate"]["url"] == GATE_URL
         assert entry.data["pin"] == "1"
         await hass.config_entries.async_unload(entry.entry_id)
+
+
+def _scene_action(script, event="CLICK", value=""):
+    return {"callType": "SCRIPT", "event": event, "cluId": "CLU221000001", "objectName": script, "value": value}
+
+
+SCENE_DOUBLE_SHAPES = {
+    # like ON_OFF_DOUBLE: two rows
+    "rows": {"id": "sd1", "type": "SCENE_DOUBLE", "components": [
+        {"type": "BUTTON_MONOSTABLE", "label": "Otwórz", "rowId": 0, "unit": "UNKNOWN", "actions": [_scene_action("bramaOtworz")]},
+        {"type": "BUTTON_MONOSTABLE", "label": "Zamknij", "rowId": 1, "unit": "UNKNOWN", "actions": [_scene_action("bramaZamknij")]},
+    ]},
+    # like VALUE_DOUBLE: left/right
+    "sides": {"id": "sd1", "type": "SCENE_DOUBLE",
+              "componentLeft": {"label": "Otwórz", "actions": [_scene_action("bramaOtworz")]},
+              "componentRight": {"label": "Zamknij", "actions": [_scene_action("bramaZamknij")]}},
+    # one row with two actions and unknown per-side event names
+    "one_row": {"id": "sd1", "type": "SCENE_DOUBLE", "label": "Brama", "components": [
+        {"label": "Brama", "rowId": 0, "actions": [_scene_action("bramaOtworz", "CLICK_LEFT"),
+                                                   _scene_action("bramaZamknij", "CLICK_RIGHT")]},
+    ]},
+}
+
+
+import pytest  # noqa: E402
+
+
+@pytest.mark.parametrize("shape", list(SCENE_DOUBLE_SHAPES))
+async def test_scene_double_buttons(hass: HomeAssistant, shape):
+    interface = json.loads(json.dumps(INTERFACE))
+    interface["pages"][0]["widgets"].append(SCENE_DOUBLE_SHAPES[shape])
+    entry = MockConfigEntry(domain="grenton", unique_id="iface1", title="iface1",
+                            data={"ip_address": "x", "port": "9998", "pin": "1", "interface": interface})
+    entry.add_to_hass(hass)
+    api = "custom_components.grenton.domain.api.clu.GrentonCluApi"
+    executed = []
+
+    async def register(self, keys):
+        return [0 for _ in keys]
+
+    async def execute(self, action):
+        executed.append(GrentonCluApiActionRequest.from_action(action).payload)
+        return True
+
+    with patch(f"{api}.connect", AsyncMock(return_value=True)), \
+         patch(f"{api}.ping", AsyncMock(return_value=True)), \
+         patch(f"{api}.register_component_states", register), \
+         patch(f"{api}.execute_action", execute), \
+         patch(f"{api}.disconnect", AsyncMock()):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+        buttons = [e for e in er.async_entries_for_config_entry(er.async_get(hass), entry.entry_id)
+                   if e.domain == "button" and e.unique_id.startswith("sd1")]
+        assert len(buttons) == 2, [b.unique_id for b in buttons]
+        for button in buttons:
+            await hass.services.async_call("button", "press", {"entity_id": button.entity_id}, blocking=True)
+        assert sorted(executed) == ["bramaOtworz()", "bramaZamknij()"]
+        names = sorted(hass.states.get(b.entity_id).attributes["friendly_name"] for b in buttons)
+        if shape == "one_row":
+            assert names == ["Brama Click left", "Brama Click right"]
+        else:
+            assert names == ["Otwórz · Zamknij Otwórz", "Otwórz · Zamknij Zamknij"]
+        await hass.config_entries.async_unload(entry.entry_id)

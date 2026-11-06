@@ -390,6 +390,9 @@
     },
     "camera": {
       "name": "Kamera"
+    },
+    "scene_double": {
+      "name": "Scena podwójna"
     }
   },
   "entity": {
