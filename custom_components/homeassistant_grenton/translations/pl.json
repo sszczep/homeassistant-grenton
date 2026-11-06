@@ -21,15 +21,15 @@
         }
       },
       "naming": {
-        "title": "Nazwy urządzeń",
-        "description": "Nazwy zostaną domyślnie utworzone z etykiet widgetów, a strony interfejsu staną się obszarami. Możesz je teraz zmienić dla każdej strony.",
+        "title": "Nazwy, obszary i jednostki",
+        "description": "Domyślnie nazwy urządzeń powstają z etykiet widgetów, a strony interfejsu stają się obszarami. Możesz teraz – strona po stronie – ustawić nazwy urządzeń i encji (friendly name), klasę urządzenia, jednostkę i dokładność czujników. Te same ustawienia są później w Konfiguruj → Nazwy, jednostki i dokładność.",
         "data": {
-          "customize_names": "Dostosuj nazwy i obszary"
+          "customize_names": "Dostosuj nazwy, obszary, jednostki i dokładność"
         }
       },
       "page_names": {
         "title": "Strona {step}/{total}: {page}",
-        "description": "Widgetów: {count}. Puste pole = nazwa domyślna. Pusty obszar = bez przypisania do obszaru.",
+        "description": "Widgetów: {count}. Puste pole = wartość domyślna. Pusty obszar = bez obszaru. Dokładność to liczba miejsc po przecinku wyświetlana w HA.",
         "data": {
           "area": "Obszar"
         }
@@ -228,7 +228,8 @@
           "clu_read_settings": "Konfiguruj CLU",
           "add_object": "Dodaj obiekt ręcznie",
           "remove_object": "Usuń ręczne obiekty",
-          "gate_settings": "Ustawienia Gate HTTP"
+          "gate_settings": "Ustawienia Gate HTTP",
+          "entity_names": "Nazwy, jednostki i dokładność"
         }
       },
       "clu_read_settings": {
@@ -286,6 +287,13 @@
         },
         "data_description": {
           "scan_interval": "Przy włączonym webhooku odpytywanie jest tylko zabezpieczeniem – możesz ustawić dłuższy interwał, np. 300 s."
+        }
+      },
+      "entity_names": {
+        "title": "Strona {step}/{total}: {page}",
+        "description": "Widgetów: {count}. Puste pole = wartość domyślna. Pusty obszar = bez obszaru. Dokładność to liczba miejsc po przecinku wyświetlana w HA.",
+        "data": {
+          "area": "Obszar"
         }
       }
     },

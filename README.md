@@ -131,11 +131,22 @@ For a widget with one entity, its default friendly name follows the device name
 without repeating the label. Widgets with multiple entities keep their individual
 entity labels, and existing custom entity names remain unchanged.
 
-### Custom names and areas
+### Names, areas, units and precision (during import)
 
-During setup (and reconfiguration) you can tick **Customize names and areas**.
-You then get one form per interface page: the page becomes the suggested area
-and every widget gets a name field prefilled from its label.
+During setup and reconfiguration you can tick **Customize names, areas, units
+and precision**. You then get one form per interface page:
+
+- **Area** of the page (becomes the suggested area of its devices),
+- one section per widget with the **device name**; for widgets with several
+  entities also the **friendly name** of each entity,
+- for sensors: **device class**, **unit** (pick or type your own) and
+  **precision** (decimals shown in HA); for binary sensors: **device class**.
+
+Fields are prefilled with the current values, so leaving them unchanged keeps
+the defaults. The same form is available later in
+**Configure → Names, units and precision**. Friendly names are applied like a
+rename in the HA UI (entity registry name); a name you later change in HA
+itself is kept.
 
 ### Manually added objects (UDP or Gate HTTP)
 

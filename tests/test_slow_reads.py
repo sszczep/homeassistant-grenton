@@ -467,7 +467,7 @@ def test_clu_flow_preserves_options_and_changes_only_selected_clu_timer(tmp_path
         menu = await manager.async_init(entry.entry_id)
         assert menu["type"] == "menu"
         assert menu["menu_options"] == [
-            "clu_read_settings", "entity_list", "add_object", "gate_settings"
+            "clu_read_settings", "entity_list", "entity_names", "add_object", "gate_settings"
         ]
         form = await manager.async_configure(
             menu["flow_id"], {"next_step_id": "clu_read_settings"}

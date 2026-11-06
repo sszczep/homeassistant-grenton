@@ -92,14 +92,63 @@ class GrentonOptionsFlow(OptionsFlowWithReload):
         # Startup can precede frontend setup. Ensure selectors exist when a
         # browser actually opens configuration, including after an update.
         await async_register_scene_editor(self.hass, notify_clients=True)
-        menu = ["clu_read_settings", "entity_list", "add_object", "gate_settings"]
+        menu = ["clu_read_settings", "entity_list", "entity_names", "add_object", "gate_settings"]
         try:
             has_manual = bool(self.config_entry.options.get(CONF_MANUAL_OBJECTS))
         except (AttributeError, ValueError):  # flow not bound to an entry yet
             has_manual = False
         if has_manual:
-            menu.insert(3, "remove_object")
+            menu.insert(4, "remove_object")
         return self.async_show_menu(step_id="init", menu_options=menu)
+
+    # --- names, units and precision (same form as during import) -----------
+    async def async_step_entity_names(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        from .entity_settings import apply_page_input, build_pages, page_schema
+        from .naming import CONF_DEVICE_NAMES, CONF_PAGE_AREAS
+
+        entry = self.config_entry
+        language = self.hass.config.language
+        if not hasattr(self, "_name_pages"):
+            self._name_pages = build_pages(self.hass, entry.data.get("interface") or {}, dict(entry.options))
+            self._name_index = 0
+            self._name_data = {
+                CONF_DEVICE_NAMES: dict(entry.data.get(CONF_DEVICE_NAMES) or {}),
+                CONF_PAGE_AREAS: dict(entry.data.get(CONF_PAGE_AREAS) or {}),
+            }
+            self._name_options = dict(entry.options)
+            if not self._name_pages:
+                return self.async_abort(reason="no_configurable_entities")
+
+        page = self._name_pages[self._name_index]
+        if user_input is not None:
+            self._name_data, self._name_options = apply_page_input(
+                page, user_input, self._name_data, self._name_options, language
+            )
+            self._name_index += 1
+            if self._name_index >= len(self._name_pages):
+                # Device names and areas live in entry data, entity settings in options
+                self.hass.config_entries.async_update_entry(entry, data={**entry.data, **self._name_data})
+                from .domain.entities.base import CONF_ENTITY_OVERRIDES
+                from .entity_settings import apply_name_overrides
+                apply_name_overrides(
+                    self.hass, entry,
+                    entry.options.get(CONF_ENTITY_OVERRIDES),
+                    self._name_options.get(CONF_ENTITY_OVERRIDES),
+                )
+                self.automatic_reload = True
+                return self.async_create_entry(title="", data=self._name_options)
+            page = self._name_pages[self._name_index]
+
+        return self.async_show_form(
+            step_id="entity_names",
+            data_schema=page_schema(page, self._name_data, self._name_options, language),
+            description_placeholders={
+                "page": page.name,
+                "step": str(self._name_index + 1),
+                "total": str(len(self._name_pages)),
+                "count": str(len(page.devices)),
+            },
+        )
 
     # --- manual objects -----------------------------------------------------
     def _options_with(self, key: str, value: Any) -> dict[str, Any]:

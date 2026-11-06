@@ -23,6 +23,7 @@ from .gate import (
 )
 from .manual_objects import CONF_MANUAL_OBJECTS, TRANSPORT_GATE, GrentonDeviceManual, build_manual_devices
 from .domain.entities.connectivity import GrentonEntityConnectivity
+from .domain.entities.base import CONF_ENTITY_OVERRIDES
 from .domain.clu import GrentonClu
 from .domain.encryption import GrentonEncryption
 from .domain.entities.clu import GrentonCluEntity
@@ -123,6 +124,9 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: GrentonConfigEntr
             if webhook_id:
                 _register_gate_webhook(hass, config_entry, webhook_id, gate_coordinator)
         await hass.config_entries.async_forward_entry_setups(config_entry, PLATFORMS)
+        # Friendly names chosen during import become registry names once entities exist
+        from .entity_settings import apply_name_overrides
+        apply_name_overrides(hass, config_entry, None, config_entry.options.get(CONF_ENTITY_OVERRIDES))
     except BaseException:
         await coordinator.async_shutdown()
         raise

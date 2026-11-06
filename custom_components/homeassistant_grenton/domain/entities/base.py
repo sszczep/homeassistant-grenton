@@ -8,6 +8,10 @@ from ...coordinator import GrentonCoordinator
 from ..entity_references import state_reference
 from ..state_object import GrentonStateObject
 
+# options key: {unique_id: {"name": str, "precision": int}}
+# "name" is applied as the entity registry name (see entity_settings.apply_name_overrides)
+CONF_ENTITY_OVERRIDES = "entity_overrides"
+
 
 class GrentonStateEntity(CoordinatorEntity[GrentonCoordinator]):
     """Share realtime availability policy across widgets and built-in CLU values."""
@@ -54,6 +58,20 @@ class BaseGrentonEntity(GrentonStateEntity):
         if isinstance(state, GrentonStateObject):
             attributes.update(state_reference(state))
         return attributes
+
+    # --- user overrides from the import flow / "Entity names" options -----
+    def _overrides(self) -> dict[str, Any]:
+        entry = getattr(self.coordinator, "config_entry", None)
+        options = getattr(entry, "options", None) or {}
+        overrides = (options.get(CONF_ENTITY_OVERRIDES) or {}).get(self.unique_id or "")
+        return overrides if isinstance(overrides, dict) else {}
+
+    @property
+    def suggested_display_precision(self) -> int | None:  # pyright: ignore[reportIncompatibleVariableOverride]
+        precision = self._overrides().get("precision")
+        if isinstance(precision, int) and not isinstance(precision, bool):
+            return precision
+        return getattr(super(), "suggested_display_precision", None)
 
     @property
     def name(self) -> str | None:  # pyright: ignore[reportIncompatibleVariableOverride]

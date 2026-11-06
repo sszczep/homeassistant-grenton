@@ -253,9 +253,9 @@ async def test_config_flow_custom_names(hass: HomeAssistant):
         assert result["step_id"] == "naming"
         result = await hass.config_entries.flow.async_configure(result["flow_id"], {"customize_names": True})
         assert result["step_id"] == "page_names"
-        fields = [str(k) for k in result["data_schema"].schema]
-        lamp_field = next(f for f in fields if f != "area")
-        result = await hass.config_entries.flow.async_configure(result["flow_id"], {"area": "Pokój dzienny", lamp_field: "Żyrandol"})
+        lamp_section = next(str(k) for k in result["data_schema"].schema if "w1" in str(k))
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {"area": "Pokój dzienny", lamp_section: {"Name": "Żyrandol"}})
         assert result["type"] == FlowResultType.CREATE_ENTRY
         await hass.async_block_till_done()
         assert st(hass, "w1_0").attributes["friendly_name"] == "Żyrandol"
@@ -418,4 +418,120 @@ async def test_availability_connectivity_and_diagnostics(hass: HomeAssistant, ai
         assert diag["gate"]["last_update_success"] is True
         json.dumps(diag, default=str)
 
+        await hass.config_entries.async_unload(entry.entry_id)
+
+
+VALUE_V2 = {
+    "id": "temp1", "type": "VALUE_V2", "label": "Temperatura", "icon": "t", "unit": "UNKNOWN",
+    "valueType": "FLOAT", "precision": 1,
+    "object": {"value": {"callType": "ATTRIBUTE", "cluId": "CLU221000001", "objectName": "ONW0001", "index": "0"}},
+}
+VALUE_DOUBLE = {
+    "id": "pair1", "type": "VALUE_DOUBLE",
+    "componentLeft": {"label": "Wilgotność", "icon": "h", "unit": "UNKNOWN", "valueType": "FLOAT", "precision": 0,
+                      "object": {"value": {"callType": "ATTRIBUTE", "cluId": "CLU221000001", "objectName": "ONW0002", "index": "0"}}},
+    "componentRight": {"label": "Ciśnienie", "icon": "p", "unit": "UNKNOWN", "valueType": "FLOAT", "precision": 0,
+                       "object": {"value": {"callType": "ATTRIBUTE", "cluId": "CLU221000001", "objectName": "ONW0003", "index": "0"}}},
+}
+
+
+async def _flow_until_page(hass, interface):
+    om = "custom_components.grenton.config_flow.GrentonObjectManagerApi"
+
+    class FakeOM:
+        def __init__(self, url): pass
+        async def __aenter__(self): return self
+        async def __aexit__(self, *a): return False
+        async def fetch_mobile_interface(self, pin): return interface
+
+    with patch(om, FakeOM):
+        result = await hass.config_entries.flow.async_init("grenton", context={"source": "user"})
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], {"ip_address": "1.2.3.4", "port": "9998", "pin": "1"})
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], {"customize_names": True})
+    return result
+
+
+async def test_import_entity_names_units_precision(hass: HomeAssistant):
+    hass.config.language = "pl"
+    interface = json.loads(json.dumps(INTERFACE))
+    interface["pages"][0]["widgets"] += [VALUE_V2, VALUE_DOUBLE]
+    api = "custom_components.grenton.domain.api.clu.GrentonCluApi"
+
+    async def register(self, keys):
+        return [21.456 for _ in keys]
+
+    with patch(f"{api}.connect", AsyncMock(return_value=True)), \
+         patch(f"{api}.ping", AsyncMock(return_value=True)), \
+         patch(f"{api}.register_component_states", register), \
+         patch(f"{api}.disconnect", AsyncMock()):
+        result = await _flow_until_page(hass, interface)
+        assert result["step_id"] == "page_names"
+        sections = {str(k): v for k, v in result["data_schema"].schema.items() if str(k) != "area"}
+        keys = list(sections)
+        temp_key = next(k for k in keys if "temp1" in k)
+        pair_key = next(k for k in keys if "pair1" in k)
+        lamp_key = next(k for k in keys if "w1" in k)
+        pair_fields = [str(k) for k in sections[pair_key].schema.schema]
+        assert pair_fields[0] == "Nazwa urządzenia"
+        assert "Wilgotność: nazwa" in pair_fields and "Ciśnienie: jednostka" in pair_fields
+
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], {
+            "area": "Salon",
+            lamp_key: {"Nazwa": "Lampa sufitowa"},
+            temp_key: {"Nazwa": "Temperatura salon", "klasa urządzenia": "temperature",
+                       "jednostka": "°C", "dokładność (miejsca po przecinku)": 1},
+            pair_key: {"Nazwa urządzenia": "Czujnik klimatu",
+                       "Wilgotność: nazwa": "Wilgotność salon", "Wilgotność: jednostka": "%",
+                       "Wilgotność: klasa urządzenia": "humidity",
+                       "Ciśnienie: nazwa": "Wilgotność · Ciśnienie Ciśnienie",  # prefilled default kept
+                       "Ciśnienie: jednostka": "hPa",
+                       "Ciśnienie: dokładność (miejsca po przecinku)": 0},
+        })
+        assert result["type"] == FlowResultType.CREATE_ENTRY
+        await hass.async_block_till_done()
+        entry = hass.config_entries.async_entries("grenton")[0]
+
+        assert st(hass, "w1_0").attributes["friendly_name"] == "Lampa sufitowa"
+        temp = st(hass, "temp1_0")
+        assert temp.attributes["friendly_name"] == "Temperatura salon"
+        assert temp.attributes["unit_of_measurement"] == "°C"
+        assert temp.attributes["device_class"] == "temperature"
+        # Realtime values need a CLU report (mocked away); precision is checked in the registry
+        def precision(uid):
+            reg = er.async_get(hass)
+            return reg.async_get(eid(hass, uid)).options["sensor"]["suggested_display_precision"]
+        assert precision("temp1_0") == 1
+        uids = [e.unique_id for e in er.async_entries_for_config_entry(er.async_get(hass), entry.entry_id)]
+        hum_uid = next(u for u in uids if u.startswith("pair1") and u.endswith("0"))
+        pres_uid = next(u for u in uids if u.startswith("pair1") and u.endswith("1"))
+        hum, pres = st(hass, hum_uid), st(hass, pres_uid)
+        assert hum.attributes["friendly_name"] == "Wilgotność salon"
+        assert hum.attributes["unit_of_measurement"] == "%"
+        assert hum.attributes["device_class"] == "humidity"
+        # Unchanged name keeps the default (device name + label) with the custom device name
+        assert pres.attributes["friendly_name"] == "Czujnik klimatu Ciśnienie"
+        assert pres.attributes["unit_of_measurement"] == "hPa"
+        assert precision(pres_uid) == 0
+        assert device(hass, "pair1").name == "Czujnik klimatu"
+        assert entry.options["entity_overrides"][hum_uid] == {"name": "Wilgotność salon"}
+        assert entry.options["entity_overrides"][pres_uid] == {"precision": 0}
+
+        # Same form later in the options; current values are prefilled
+        result = await hass.config_entries.options.async_init(entry.entry_id)
+        assert "entity_names" in result["menu_options"]
+        result = await hass.config_entries.options.async_configure(result["flow_id"], {"next_step_id": "entity_names"})
+        assert result["step_id"] == "entity_names"
+        sections = {str(k): v for k, v in result["data_schema"].schema.items() if str(k) != "area"}
+        temp_fields = {str(k): k for k in sections[temp_key].schema.schema}
+        assert temp_fields["Nazwa"].default() == "Temperatura salon"
+        result = await hass.config_entries.options.async_configure(result["flow_id"], {
+            "area": "Salon",
+            temp_key: {"Nazwa": "Temp. salon", "klasa urządzenia": "temperature", "jednostka": "°C",
+                       "dokładność (miejsca po przecinku)": 2},
+        })
+        assert result["type"] == FlowResultType.CREATE_ENTRY
+        await hass.async_block_till_done()
+        temp = st(hass, "temp1_0")
+        assert temp.attributes["friendly_name"] == "Temp. salon"
+        assert precision("temp1_0") == 2
         await hass.config_entries.async_unload(entry.entry_id)

@@ -15,20 +15,12 @@ from .domain.api.object_manager import (
     GrentonObjectManagerDataError
 )
 from .options_flow import GrentonOptionsFlow
-from .dto.mobile_interface import GrentonMobileInterfaceDto
-from .dto.page import GrentonPageDto
-from .naming import (
-    CONF_DEVICE_NAMES,
-    CONF_PAGE_AREAS,
-    auto_device_name,
-    resolve_device_name,
-    resolve_page_area,
-)
+from .entity_settings import PageModel, apply_page_input, build_pages, page_schema
+from .naming import CONF_DEVICE_NAMES, CONF_PAGE_AREAS
 
 _LOGGER = logging.getLogger(__name__)
 
 CONF_CUSTOMIZE_NAMES = "customize_names"
-CONF_AREA = "area"
 
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
@@ -46,10 +38,9 @@ class GrentonConfigFlow(ConfigFlow, domain=DOMAIN):
         self._is_reconfigure = False
         self._device_names: dict[str, str] = {}
         self._page_areas: dict[str, str] = {}
-        self._pages: list[GrentonPageDto] = []
+        self._options: dict[str, Any] = {}
+        self._pages: list[PageModel] = []
         self._page_index = 0
-        # form field key -> widget id, for the page currently shown
-        self._field_to_widget: dict[str, str] = {}
     
     @staticmethod
     @callback
@@ -98,6 +89,7 @@ class GrentonConfigFlow(ConfigFlow, domain=DOMAIN):
                 self._is_reconfigure = False
                 self._device_names = {}
                 self._page_areas = {}
+                self._options = {}
                 return await self.async_step_naming()
 
         return self.async_show_form(
@@ -133,6 +125,7 @@ class GrentonConfigFlow(ConfigFlow, domain=DOMAIN):
                 self._is_reconfigure = True
                 self._device_names = dict(entry.data.get(CONF_DEVICE_NAMES) or {})
                 self._page_areas = dict(entry.data.get(CONF_PAGE_AREAS) or {})
+                self._options = dict(entry.options)
                 return await self.async_step_naming()
 
         return self.async_show_form(
@@ -149,16 +142,15 @@ class GrentonConfigFlow(ConfigFlow, domain=DOMAIN):
 
 
     async def async_step_naming(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
-        """Ask whether the user wants to customize device names and areas."""
+        """Ask whether to customize names, areas, units and precision."""
         if user_input is not None:
             if not user_input.get(CONF_CUSTOMIZE_NAMES):
                 return await self._async_finish()
             try:
-                interface = GrentonMobileInterfaceDto(**self._base_data["interface"])
+                self._pages = build_pages(self.hass, self._base_data["interface"], self._options)
             except Exception as e:  # validation of the fetched interface
                 _LOGGER.exception("Cannot parse mobile interface: %s", e)
                 return self.async_abort(reason="invalid_data")
-            self._pages = [page for page in interface.pages if page.widgets]
             self._page_index = 0
             if not self._pages:
                 return await self._async_finish()
@@ -171,61 +163,49 @@ class GrentonConfigFlow(ConfigFlow, domain=DOMAIN):
             ),
         )
 
+    def _names_data(self) -> dict[str, Any]:
+        return {CONF_DEVICE_NAMES: self._device_names, CONF_PAGE_AREAS: self._page_areas}
+
     async def async_step_page_names(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
-        """One form per interface page: area + a name field per widget."""
+        """One form per interface page: area, device and entity names, units, precision."""
+        language = self.hass.config.language
         page = self._pages[self._page_index]
 
         if user_input is not None:
-            self._page_areas[page.name] = str(user_input.get(CONF_AREA, "")).strip()
-            widgets_by_id = {widget.id: widget for widget in page.widgets}
-            for field, widget_id in self._field_to_widget.items():
-                value = str(user_input.get(field, "")).strip()
-                widget = widgets_by_id[widget_id]
-                if value and value != auto_device_name(widget):
-                    self._device_names[widget_id] = value
-                else:
-                    self._device_names.pop(widget_id, None)
-
+            data, self._options = apply_page_input(page, user_input, self._names_data(), self._options, language)
+            self._device_names = data[CONF_DEVICE_NAMES]
+            self._page_areas = data[CONF_PAGE_AREAS]
             self._page_index += 1
             if self._page_index >= len(self._pages):
                 return await self._async_finish()
             page = self._pages[self._page_index]
 
-        schema: dict[Any, Any] = {
-            vol.Optional(
-                CONF_AREA,
-                default=resolve_page_area(page.name, self._page_areas) or "",
-            ): str,
-        }
-        self._field_to_widget = {}
-        for widget in page.widgets:
-            # The key doubles as the visible label (no translation exists for it);
-            # the widget id keeps it unique.
-            field = f"{auto_device_name(widget)} ({widget.type}, {widget.id})"
-            self._field_to_widget[field] = widget.id
-            schema[vol.Optional(field, default=resolve_device_name(widget, self._device_names))] = str
-
         return self.async_show_form(
             step_id="page_names",
-            data_schema=vol.Schema(schema),
+            data_schema=page_schema(page, self._names_data(), self._options, language),
             description_placeholders={
                 "page": page.name,
                 "step": str(self._page_index + 1),
                 "total": str(len(self._pages)),
-                "count": str(len(page.widgets)),
+                "count": str(len(page.devices)),
             },
         )
 
     async def _async_finish(self) -> ConfigFlowResult:
-        data = {
-            **self._base_data,
-            CONF_DEVICE_NAMES: self._device_names,
-            CONF_PAGE_AREAS: self._page_areas,
-        }
+        data = {**self._base_data, **self._names_data()}
         if self._is_reconfigure:
-            return self.async_update_reload_and_abort(self._get_reconfigure_entry(), data=data)
-        return self.async_create_entry(title=str(self._base_data["interface"].get("id")), data=data)
-
+            entry = self._get_reconfigure_entry()
+            from .domain.entities.base import CONF_ENTITY_OVERRIDES
+            from .entity_settings import apply_name_overrides
+            apply_name_overrides(
+                self.hass, entry,
+                entry.options.get(CONF_ENTITY_OVERRIDES),
+                self._options.get(CONF_ENTITY_OVERRIDES),
+            )
+            return self.async_update_reload_and_abort(entry, data=data, options=self._options)
+        return self.async_create_entry(
+            title=str(self._base_data["interface"].get("id")), data=data, options=self._options
+        )
 
 
 class CannotConnect(Exception):

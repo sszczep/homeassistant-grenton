@@ -21,15 +21,15 @@
         }
       },
       "naming": {
-        "title": "Device names",
-        "description": "By default, names are created from widget labels and interface pages become areas. You can change them now, page by page.",
+        "title": "Names, areas and units",
+        "description": "By default device names come from widget labels and interface pages become areas. You can now set, page by page, device and entity (friendly) names, device class, unit and precision of sensors. The same settings are available later in Configure → Names, units and precision.",
         "data": {
-          "customize_names": "Customize names and areas"
+          "customize_names": "Customize names, areas, units and precision"
         }
       },
       "page_names": {
         "title": "Page {step}/{total}: {page}",
-        "description": "Widgets: {count}. Empty field = default name. Empty area = no area assigned.",
+        "description": "Widgets: {count}. Empty field = default. Empty area = no area. Precision is the number of decimals shown in HA.",
         "data": {
           "area": "Area"
         }
@@ -228,7 +228,8 @@
           "clu_read_settings": "Configure CLU",
           "add_object": "Add object manually",
           "remove_object": "Remove manual objects",
-          "gate_settings": "Gate HTTP settings"
+          "gate_settings": "Gate HTTP settings",
+          "entity_names": "Names, units and precision"
         }
       },
       "clu_read_settings": {
@@ -286,6 +287,13 @@
         },
         "data_description": {
           "scan_interval": "With the webhook enabled, polling is only a fallback – a longer interval such as 300 s is fine."
+        }
+      },
+      "entity_names": {
+        "title": "Page {step}/{total}: {page}",
+        "description": "Widgets: {count}. Empty field = default. Empty area = no area. Precision is the number of decimals shown in HA.",
+        "data": {
+          "area": "Area"
         }
       }
     },
