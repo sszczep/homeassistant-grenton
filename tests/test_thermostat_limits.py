@@ -23,7 +23,7 @@ from custom_components.homeassistant_grenton.domain.thermostat_schedule import (
 
 def test_limits_are_reported_sensors_on_the_same_device_without_new_subscriptions():
     device, climate, _, coord, values = make_sensor(**{"10": 10, "11": 30})
-    minimum, maximum = device.entities[2:]
+    minimum, maximum = device.entities[2:4]
     assert [sensor.unique_id for sensor in (minimum, maximum)] == [
         "thermostat1_min_temperature",
         "thermostat1_max_temperature",
@@ -41,6 +41,10 @@ def test_limits_are_reported_sensors_on_the_same_device_without_new_subscription
         assert maximum.native_value is None
     assert coord.register_component_state.call_count == 9
     coord.execute_action.assert_not_called()
+    # Fork: read-only effective target sensor, no extra subscriptions
+    target = device.entities[4]
+    assert target.unique_id == "thermostat1_target_temperature"
+    assert target.device_class == SensorDeviceClass.TEMPERATURE
     for language in ("en", "pl"):
         translations = json.loads(
             (

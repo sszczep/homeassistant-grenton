@@ -485,6 +485,9 @@
       },
       "thermostat_maximum": {
         "name": "Maximum temperature"
+      },
+      "thermostat_target": {
+        "name": "Target temperature"
       }
     },
     "binary_sensor": {

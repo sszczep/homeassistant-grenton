@@ -220,11 +220,13 @@ def test_cooling_setpoints_are_manual_only_and_direction_write_failure_stops_act
     asyncio.run(entity.async_set_temperature(temperature=23.5))
     assert payloads(coord) == ['THERMOSTAT1:set(3,"23.5")']
     entity, coord = thermostat(imported=True, values={"8": 2})
-    with pytest.raises(ServiceValidationError):
-        asyncio.run(
-            entity.async_set_temperature(temperature=23.5, hvac_mode=HVACMode.COOL)
-        )
-    coord.execute_action.assert_not_called()
+    # Fork: an explicit Cool with a target leaves the schedule (target first)
+    asyncio.run(
+        entity.async_set_temperature(temperature=23.5, hvac_mode=HVACMode.COOL)
+    )
+    sent = payloads(coord)
+    assert sent[0] == 'THERMOSTAT1:set(3,"23.5")' and 'THERMOSTAT1:set(7,"1")' in sent
+    entity, coord = thermostat(imported=True, values={"8": 2})
     coord.execute_action.side_effect = HomeAssistantError("No CLU")
     with pytest.raises(HomeAssistantError):
         asyncio.run(entity.async_set_hvac_mode(HVACMode.COOL))

@@ -223,14 +223,18 @@ def test_manual_target_write_changes_neither_mode_nor_power():
 
 @pytest.mark.parametrize("mode", [2, 1, 3, None])
 @pytest.mark.parametrize("enabled", [0, 1])
-def test_auto_and_unknown_modes_disable_target_controls_and_reject_writes(
+def test_target_outside_manual_mode_is_shown_and_switches_to_manual_heat(
     mode, enabled
 ):
-    entity, coord = thermostat(**{"6": enabled, "8": mode})
-    assert not entity.supported_features & ClimateEntityFeature.TARGET_TEMPERATURE
-    with pytest.raises(ServiceValidationError, match="Select Heat"):
-        asyncio.run(entity.async_set_temperature(temperature=22.5))
-    coord.execute_action.assert_not_called()
+    # Fork behaviour: the target is always shown; changing it while not in
+    # manual mode (e.g. following the schedule) switches to manual heating.
+    entity, coord = thermostat(**{"6": enabled, "8": mode, "10": 10, "11": 30})
+    assert entity.supported_features & ClimateEntityFeature.TARGET_TEMPERATURE
+    asyncio.run(entity.async_set_temperature(temperature=22.5))
+    sent = payloads(coord)
+    assert sent[0] == 'THERMOSTAT1:set(3,"22.5")'
+    assert 'THERMOSTAT1:set(8,"0")' in sent
+    assert sent[-1] == 'THERMOSTAT1:set(6,"1")'
 
 
 def test_auto_with_temperature_is_rejected_before_changing_either_setting():
@@ -242,13 +246,14 @@ def test_auto_with_temperature_is_rejected_before_changing_either_setting():
     coord.execute_action.assert_not_called()
 
 
-def test_combined_heat_and_temperature_cannot_bypass_the_auto_lock():
-    entity, coord = thermostat(**{"6": 1, "8": 2})
-    with pytest.raises(ServiceValidationError, match="Select Heat"):
-        asyncio.run(
-            entity.async_set_temperature(temperature=22.5, hvac_mode=HVACMode.HEAT)
-        )
-    coord.execute_action.assert_not_called()
+def test_combined_heat_and_temperature_leaves_the_schedule_explicitly():
+    entity, coord = thermostat(**{"6": 1, "8": 2, "10": 10, "11": 30})
+    asyncio.run(
+        entity.async_set_temperature(temperature=22.5, hvac_mode=HVACMode.HEAT)
+    )
+    sent = payloads(coord)
+    assert sent[0] == 'THERMOSTAT1:set(3,"22.5")'
+    assert 'THERMOSTAT1:set(8,"0")' in sent
 
 
 def test_manual_target_step_accepts_conversion_noise_and_writes_exact_half_degrees():
@@ -381,12 +386,13 @@ def test_native_climate_entity_registration_and_state(tmp_path):
         state = hass.states.get(entity.entity_id)
         assert state.state == "auto"
         assert state.attributes["current_temperature"] == 21.2
-        assert "temperature" not in state.attributes
+        # Fork: the effective scheduled target is shown on the card as well
+        assert state.attributes["temperature"] == 23.5
         assert state.attributes["scheduled_target_temperature_celsius"] == 23.5
         assert state.attributes["hvac_action"] == "idle"
         assert "preset_mode" not in state.attributes
         assert (
-            not state.attributes["supported_features"]
+            state.attributes["supported_features"]
             & ClimateEntityFeature.TARGET_TEMPERATURE
         )
         await entity.apply_configuration({"cooling_enabled": True})
