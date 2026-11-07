@@ -1,6 +1,8 @@
 # Home Assistant Grenton
 
-> Fork of [k911/homeassistant-grenton](https://github.com/k911/homeassistant-grenton) (itself based on [sszczep/homeassistant-grenton](https://github.com/sszczep/homeassistant-grenton)) with manually added objects over UDP or Gate HTTP, Gate webhook push and import-time naming.
+> Fork of [k911/homeassistant-grenton](https://github.com/k911/homeassistant-grenton) (based on [sszczep/homeassistant-grenton](https://github.com/sszczep/homeassistant-grenton)).
+> Adds objects outside the myGrenton interface (over UDP or **Gate HTTP**), older **THERMOSTAT** widgets, **SCENE_DOUBLE**,
+> names/units/precision at import, migration from **Grenton Objects** and a diagnostics download.
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg?style=for-the-badge)](https://github.com/hacs/integration)
 [![GitHub release](https://img.shields.io/github/v/release/wirczur/homeassistant-grenton?style=for-the-badge)](https://github.com/wirczur/homeassistant-grenton/releases)
@@ -8,7 +10,9 @@
 
 Custom Home Assistant integration for **Grenton Smart Home** system. Seamlessly connect and control your Grenton devices through Home Assistant with automatic discovery, real-time updates, and full configuration support.
 
-![Grenton Integration](assets/dashboard.png)
+![Illustrative Home Assistant dashboard with Grenton thermostats, lights, scenes, CLU and Gate HTTP status](assets/dashboard.png)
+
+<sub>Illustration of the entities this integration provides (mockup, sample values).</sub>
 
 ## ✨ Features
 
@@ -17,6 +21,12 @@ Custom Home Assistant integration for **Grenton Smart Home** system. Seamlessly 
 - **🏠 Multiple Widget Types** - Support for lights, switches, dimmers, sensors, covers, and more
 - **Thermostats** - `THERMOSTAT_V2` climate entities with heating, optional cooling, a weekly schedule editor, temperature readings, and activity status
 - **⚙️ Per-Entity Configuration** - Customize device class and unit of measurement for each supported entity through the UI
+- **🌡 Older thermostats** - `THERMOSTAT` widgets get the same climate entity as `THERMOSTAT_V2`; the target is shown also while following the schedule, plus a **Target temperature** sensor
+- **🧩 Objects outside the interface** - Add any `CLU->OBJECT` (switch, light, dimmer, LED, cover, thermostat, sensor, script) over **UDP** or **Gate HTTP**, Z-Wave variants included
+- **🌐 Gate HTTP** - Batched polling, optional webhook push for instant updates, connectivity sensor
+- **🏷 Names, areas, units and precision** - Set them per page while importing, change them later in **Configure**
+- **🔁 Migration from Grenton Objects** - Import objects and keep their `entity_id`, names, icons and areas
+- **🩺 Diagnostics** - Download with the exact reason for every skipped widget (secrets redacted)
 - **🔄 Real-time Updates** - Automatic state synchronization with Grenton system
 - **🌍 Multi-language Support** - Fully translated UI in English and Polish
 - **📱 Modern UI** - Native Home Assistant integration with clean configuration flows
@@ -34,13 +44,13 @@ Custom Home Assistant integration for **Grenton Smart Home** system. Seamlessly 
 | **CONTACT_SENSOR** | Contact/door/window sensor exposed as `binary_sensor`. |
 | **CONTACT_SENSOR_DOUBLE** | Dual contact channels exposed as two `binary_sensor` entities. |
 | **SLIDER** | User-configurable numeric control exposed as `number` (slider/box/auto modes). |
-| [**THERMOSTAT_V2**](#thermostat-thermostat_v2) | Thermostat exposed as `climate`, with optional cooling, manual targets, editable weekly schedules, temperature/activity feedback, and a read-only Schedule sensor. |
+| [**THERMOSTAT_V2**](#thermostat-thermostat_v2) | Thermostat exposed as `climate`, with optional cooling, target shown also in Auto, editable weekly schedules, temperature/activity feedback, and read-only Schedule and Target temperature sensors. |
 | **MULTISENSOR** | Composite multi-channel sensor mapped to multiple `sensor` entities (as provided). |
 | **ROLLER_SHUTTER** | Legacy roller shutter exposed as `sensor` (state enum) plus a `button` action entity. |
 | **ROLLER_SHUTTER_V3** | Roller shutter V3 exposed as a single `cover` entity (position; lamel/tilt when available). |
 | **CAMERA** | Camera stream exposed as `camera`. |
 | **SCENE** | Scene buttons with configurable script, method, attribute, or variable actions and arguments. |
-| **THERMOSTAT** | Older thermostat widget, converted to the THERMOSTAT_V2 bindings (same object features), so it gets the same climate entity, schedule and limit sensors. |
+| [**THERMOSTAT**](#thermostat-thermostat_v2) | Older thermostat widget, converted to the THERMOSTAT_V2 bindings (same object features), so it gets the same climate entity, schedule and limit sensors. |
 | **SCENE_DOUBLE** | Two scene buttons (e.g. open/close) exposed as `button` entities, configurable like SCENE. The widget JSON is parsed tolerantly; if yours is skipped, attach the integration diagnostics to an issue. |
 
 See [Device specifications](#device-specifications) for detailed behavior and setup.
@@ -437,9 +447,12 @@ cooling schedule, the climate state is `auto`, `control_direction_name` is
 The numeric value is also available as `control_direction`. Disabling cooling
 hides Cool without changing the running CLU settings.
 
-Manual target temperatures use 0.5°C increments. Temperature editing is disabled
-in Auto; choose Heat or Cool before changing the target. A temperature action
-cannot leave Auto, including when it also requests a manual mode.
+Manual target temperatures use 0.5°C increments. The target is shown on the card
+in every mode, including **Auto** where it comes from the schedule. Changing it while
+in Auto (or another non-manual mode) writes the new target and switches to manual
+**Heat** (or **Cool** when cooling is enabled and selected); choose **Auto** again to
+return to the schedule. A request that sets a temperature together with **Auto** is
+rejected, because the schedule owns the target there.
 Setting only a temperature in manual mode preserves the enabled state.
 The widget's minimum and maximum temperature bindings supply the control's bounds.
 Each device also exposes **Minimum temperature** and **Maximum temperature** sensors
@@ -453,8 +466,13 @@ or change the manual target first. Limits and schedules are read back from the C
 before success is reported. A failed multi-write save can leave partial changes;
 reopen configuration to inspect the device's current values before retrying.
 Home Assistant converts Celsius temperatures to the installation's preferred unit.
-While Auto hides the editable target control, the effective scheduled target is
-available as the read-only `scheduled_target_temperature_celsius` attribute.
+The effective target (manual or scheduled) is also available as the read-only
+**Target temperature** sensor and, in Auto, as the `scheduled_target_temperature_celsius`
+attribute.
+
+Older `THERMOSTAT` widgets (one component per role: state, mode, current/target
+temperature, operational state, schedule, schedule min/max) address the same object
+features and are converted to these bindings, so they behave exactly the same.
 
 Activity comes from `controlOutValue`: 1 means heating or cooling according to
 direction, and 0 means idle when enabled. Unsupported or missing values remain unknown.
@@ -851,6 +869,21 @@ Configure sliders with appropriate device classes for proper representation:
 3. For polled values, check the CLU's slow-read interval (default: 60 seconds)
 4. Check Grenton device is responding to queries
 
+## 📋 Changelog
+
+### 0.3.1
+- Thermostat target visible in schedule mode (Auto); changing it switches to manual
+- New read-only **Target temperature** sensor per thermostat
+
+### 0.3.0
+- `THERMOSTAT` (older) widgets via the THERMOSTAT_V2 climate entity; HEADER/TEXT skipped silently
+- `SCENE_DOUBLE` widgets as two scene buttons
+- **Configure → Import from Grenton Objects** with entity_id takeover
+- Manual objects over UDP or Gate HTTP, Gate webhook push and connectivity sensor
+- Names, areas, units and precision during import and in Configure
+- Diagnostics download; one warning per skipped widget type
+- Merged k911 (THERMOSTAT_V2, CLU devices, protocol improvements) and sszczep PRs #14–#16
+
 ## 📝 License
 
 This project is licensed under the **GNU General Public License v3.0**.
@@ -880,6 +913,8 @@ For issues, questions, or contributions:
 ## 🙏 Acknowledgments
 
 - [@sszczep](https://github.com/sszczep), author of the original Grenton integration
+- [@k911](https://github.com/k911), whose fork this builds on (THERMOSTAT_V2, CLU devices, protocol work)
+- [@jnalepka](https://github.com/jnalepka), author of Grenton Objects; the Gate HTTP listener format is kept compatible
 - Home Assistant community for the excellent platform
 - Grenton for their smart home system
 - All contributors and users of this integration
