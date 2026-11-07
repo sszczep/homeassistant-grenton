@@ -646,359 +646,482 @@ if (!customElements.get("ha-selector-grenton_thermostat")) {
 // ---------------------------------------------------------------------------
 // Thermostat schedule dashboard card (scoped block: no clash with the selectors above)
 {
-// Grenton thermostat schedule card.
+// Grenton thermostat card with a weekly schedule editor.
 //
-// Dashboard card that edits the weekly schedule of Grenton thermostats directly,
-// using the climate entity's `weekly_schedule`, `min_temp` and `max_temp`
-// attributes and the `grenton.set_thermostat_schedule` action.
+// Tile per thermostat (status, current temperature, setpoint -/+, Off/Heat/Auto,
+// "Schedule" button). The schedule opens in a dialog: a week grid of coloured
+// temperature blocks and an editor for the selected day. Saving uses
+// grenton.set_thermostat_schedule.
 //
 //   type: custom:grenton-schedule-card
 //   entities:            # optional; default: every Grenton thermostat
-//     - climate.ogrzewanie_sypialnia
-//   title: Harmonogramy  # optional
+//     - climate.ogrzewanie_ania
+//   title: Ogrzewanie    # optional
 
 const DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
 const TEXT = {
   pl: {
-    title: "Harmonogram ogrzewania",
     days: ["Pon", "Wt", "Śr", "Czw", "Pt", "Sob", "Nd"],
-    start: "Od", temperature: "Temperatura", add: "Dodaj okres", remove: "Usuń",
-    copy: "Kopiuj ten dzień na", weekdays: "Pon–Pt", weekend: "Sob–Nd", week: "Cały tydzień",
-    save: "Zapisz na CLU", discard: "Odrzuć zmiany", saving: "Zapisywanie…", saved: "Zapisano",
-    unsaved: "Niezapisane zmiany",
-    notAuto: "Termostat nie jest w trybie AUTO – harmonogram nie jest teraz używany.",
-    setAuto: "Włącz AUTO",
+    dayNames: ["Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek", "Sobota", "Niedziela"],
+    setpoint: "Nastawa", schedule: "Harmonogram", off: "Wył.", heat: "Grzanie", cool: "Chłodzenie", auto: "Auto",
+    heating: "Grzeje", cooling: "Chłodzi", idle: "Bezczynny", offState: "Wyłączony",
+    copy: "Kopiuj na:", weekdays: "dni robocze", weekend: "weekend", week: "cały tydzień",
+    add: "Dodaj zmianę temperatury", remove: "Usuń", save: "Zapisz", cancel: "Anuluj", saving: "Zapisywanie…",
+    title: (name) => `${name} – harmonogram`,
+    notAuto: "Termostat nie jest w trybie Auto – harmonogram zacznie działać po włączeniu Auto.",
+    setAuto: "Włącz Auto",
     noSchedule: "Harmonogram nie został jeszcze odczytany z CLU.",
     none: "Brak termostatów Grenton.",
-    firstMidnight: "Pierwszy okres musi zaczynać się o 00:00.",
-    order: "Godziny muszą rosnąć, co 15 minut.",
-    range: (min, max) => `Temperatura musi być w zakresie ${min}–${max} °C, co 0,5 °C.`,
+    copied: "Skopiowano",
+    range: (min, max) => `Temperatura musi być w zakresie ${min}–${max} °C.`,
   },
   en: {
-    title: "Heating schedule",
     days: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-    start: "From", temperature: "Temperature", add: "Add period", remove: "Remove",
-    copy: "Copy this day to", weekdays: "Mon–Fri", weekend: "Sat–Sun", week: "Whole week",
-    save: "Save to CLU", discard: "Discard changes", saving: "Saving…", saved: "Saved",
-    unsaved: "Unsaved changes",
-    notAuto: "The thermostat is not in Auto – the schedule is not used right now.",
+    dayNames: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+    setpoint: "Setpoint", schedule: "Schedule", off: "Off", heat: "Heat", cool: "Cool", auto: "Auto",
+    heating: "Heating", cooling: "Cooling", idle: "Idle", offState: "Off",
+    copy: "Copy to:", weekdays: "weekdays", weekend: "weekend", week: "whole week",
+    add: "Add temperature change", remove: "Remove", save: "Save", cancel: "Cancel", saving: "Saving…",
+    title: (name) => `${name} – schedule`,
+    notAuto: "The thermostat is not in Auto – the schedule applies once Auto is on.",
     setAuto: "Switch to Auto",
     noSchedule: "The schedule has not been read from the CLU yet.",
     none: "No Grenton thermostats.",
-    firstMidnight: "The first period must start at 00:00.",
-    order: "Start times must increase in 15-minute steps.",
-    range: (min, max) => `Temperature must be within ${min}–${max} °C in 0.5 °C steps.`,
+    copied: "Copied",
+    range: (min, max) => `Temperature must be within ${min}–${max} °C.`,
   },
 };
 
 const STYLE = `
   :host { display: block; }
-  ha-card { padding: 16px; color: var(--primary-text-color); }
-  h2 { color: var(--primary-text-color); margin: 0 0 12px; font-size: 20px; font-weight: 500; }
-  .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
-  .tab { border: 1px solid var(--divider-color); background: none; color: var(--primary-text-color);
-         border-radius: 16px; padding: 6px 12px; cursor: pointer; font: inherit; }
-  .tab.active { background: var(--primary-color); color: var(--text-primary-color, #fff); border-color: var(--primary-color); }
-  .tab.dirty::after { content: " •"; }
-  .warn { background: rgba(var(--rgb-warning-color, 255,152,0), .15); border-radius: 8px;
-          padding: 8px 12px; margin-bottom: 12px; display: flex; gap: 12px; align-items: center;
-          justify-content: space-between; font-size: 14px; }
-  .error { color: var(--error-color); font-size: 14px; margin: 8px 0; }
-  .muted { color: var(--secondary-text-color); font-size: 14px; }
-  .row { display: grid; grid-template-columns: 1fr 1fr 40px; gap: 8px; align-items: center; margin-bottom: 8px; }
-  .head { font-size: 13px; color: var(--secondary-text-color); margin-bottom: 4px; }
-  .time { display: flex; gap: 4px; align-items: center; }
-  select, input { font: inherit; color: var(--primary-text-color); background: var(--card-background-color);
-                  border: 1px solid var(--divider-color); border-radius: 6px; padding: 6px; min-height: 36px; width: 100%; }
-  button.icon { width: 36px; height: 36px; border-radius: 50%; border: none; background: none;
-                color: var(--secondary-text-color); cursor: pointer; font-size: 20px; }
-  button.icon:disabled { opacity: .3; cursor: default; }
-  .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; align-items: center; }
-  .btn { border: 1px solid var(--divider-color); background: none; color: var(--primary-text-color);
-         border-radius: 8px; padding: 6px 12px; cursor: pointer; font: inherit; }
+  * { box-sizing: border-box; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+  .heading { font-size: 18px; font-weight: 500; margin: 4px 4px 12px; color: var(--primary-text-color); }
+  ha-card.tile { padding: 14px; color: var(--primary-text-color); display: flex; flex-direction: column; gap: 10px; }
+  .top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .name { font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 6px; min-width: 0; }
+  .name span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chip { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 10px; white-space: nowrap;
+          background: var(--secondary-background-color); color: var(--secondary-text-color); }
+  .chip.heating { background: rgba(255, 152, 0, .22); color: var(--state-climate-heat-color, #e8860f); }
+  .chip.cooling { background: rgba(33, 150, 243, .2); color: var(--state-climate-cool-color, #2196f3); }
+  .current { font-size: 44px; font-weight: 600; line-height: 1.1; margin: 8px 0 4px; }
+  .setpoint { display: grid; grid-template-columns: 48px 1fr 48px; align-items: center; text-align: center; }
+  .setpoint small { display: block; font-size: 12px; color: var(--secondary-text-color); }
+  .setpoint b { font-size: 24px; }
+  .round { width: 44px; height: 44px; border-radius: 50%; border: none; cursor: pointer; font-size: 22px;
+           background: var(--secondary-background-color); color: var(--primary-text-color); }
+  .round:disabled { opacity: .4; cursor: default; }
+  .modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .mode, .wide { border: none; border-radius: 10px; padding: 10px 6px; cursor: pointer; font: inherit; font-size: 13px; font-weight: 600;
+                 background: var(--secondary-background-color); color: var(--primary-text-color); }
+  .mode.active { background: rgba(255, 152, 0, .3); color: var(--state-climate-heat-color, #e8860f); }
+  .mode.active.auto { background: rgba(76, 175, 80, .25); color: var(--state-climate-auto-color, #4caf50); }
+  .mode.active.off { background: rgba(127, 127, 127, .35); color: var(--primary-text-color); }
+  .backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, .45); z-index: 9; display: flex;
+              align-items: center; justify-content: center; padding: 12px; }
+  .dialog { background: var(--card-background-color, #fff); color: var(--primary-text-color); border-radius: 20px;
+            width: min(760px, 100%); max-height: 92vh; overflow: auto; padding: 16px 16px 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, .35); }
+  .dialog-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .dialog-head h3 { margin: 0; font-size: 17px; }
+  .close { width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--divider-color); background: none;
+           color: var(--primary-text-color); cursor: pointer; font-size: 20px; }
+  .week { display: grid; grid-template-columns: 44px 1fr; gap: 6px 8px; align-items: center; }
+  .week .day { font-size: 13px; font-weight: 600; padding: 6px 4px; border-radius: 8px; cursor: pointer; }
+  .week .row { display: flex; height: 28px; border-radius: 8px; overflow: hidden; cursor: pointer; outline-offset: 2px; }
+  .week .row.selected { outline: 2px solid var(--primary-color); }
+  .week .day.selected { background: var(--secondary-background-color); }
+  .seg { display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700;
+         color: rgba(0, 0, 0, .75); overflow: hidden; white-space: nowrap; border-right: 1px solid rgba(255,255,255,.5); }
+  .axis { grid-column: 2; display: flex; justify-content: space-between; font-size: 11px; color: var(--secondary-text-color); }
+  .editor { margin-top: 14px; background: var(--secondary-background-color); border-radius: 14px; padding: 12px; }
+  .editor-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .editor-head h4 { margin: 0; font-size: 16px; }
+  .copy { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 13px; color: var(--secondary-text-color); }
+  .pill { border: 1px solid var(--divider-color); background: var(--card-background-color); color: var(--primary-text-color);
+          border-radius: 14px; padding: 4px 10px; cursor: pointer; font: inherit; font-size: 12px; font-weight: 600; }
+  .period { display: grid; grid-template-columns: 8px 92px 1fr 40px 56px 40px 32px; gap: 8px; align-items: center; padding: 5px 0; }
+  .swatch { width: 8px; height: 28px; border-radius: 4px; }
+  .period select { font: inherit; font-weight: 700; padding: 6px; border-radius: 8px; border: 1px solid var(--divider-color);
+                   background: var(--card-background-color); color: var(--primary-text-color); width: 100%; }
+  .period .fixed { font-weight: 700; padding-left: 8px; }
+  .until { font-size: 13px; color: var(--secondary-text-color); white-space: nowrap; }
+  .temp { text-align: center; font-size: 20px; font-weight: 700; }
+  .period .round { width: 40px; height: 40px; font-size: 20px; background: var(--card-background-color); }
+  .x { border: none; background: none; color: var(--secondary-text-color); cursor: pointer; font-size: 18px; }
+  .x:disabled { visibility: hidden; }
+  .add { margin-top: 6px; border: 1px dashed var(--divider-color); background: none; color: var(--primary-text-color);
+         border-radius: 10px; padding: 8px 14px; cursor: pointer; font: inherit; font-weight: 600; }
+  .add:disabled { opacity: .4; cursor: default; }
+  .warn { font-size: 13px; padding: 8px 12px; border-radius: 10px; margin-bottom: 12px; display: flex;
+          gap: 8px; align-items: center; justify-content: space-between; background: rgba(255, 152, 0, .15); }
+  .footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; align-items: center; }
+  .error { color: var(--error-color, #db4437); font-size: 13px; margin-right: auto; }
+  .btn { border: 1px solid var(--divider-color); background: none; color: var(--primary-text-color); border-radius: 10px;
+         padding: 9px 16px; cursor: pointer; font: inherit; font-weight: 600; }
   .btn.primary { background: var(--primary-color); border-color: var(--primary-color); color: var(--text-primary-color, #fff); }
   .btn:disabled { opacity: .5; cursor: default; }
-  .bar { display: flex; height: 10px; border-radius: 5px; overflow: hidden; margin: 4px 0 12px; }
+  .muted { color: var(--secondary-text-color); font-size: 14px; }
+  @media (max-width: 520px) {
+    .period { grid-template-columns: 8px 84px 1fr 36px 48px 36px 24px; gap: 6px; }
+    .until { font-size: 11px; }
+  }
 `;
 
-function text(hass) {
-  return TEXT[(hass?.language || "en").startsWith("pl") ? "pl" : "en"];
-}
+const clone = (value) => JSON.parse(JSON.stringify(value));
+const minutes = (time) => { const [h, m] = time.split(":").map(Number); return h * 60 + m; };
+const hhmm = (total) => `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+const fmt = (value, lang, decimals) => {
+  const text = Number(value).toFixed(decimals ?? (Number(value) % 1 ? 1 : 0));
+  return lang === "pl" ? text.replace(".", ",") : text;
+};
 
-function clone(value) {
-  return JSON.parse(JSON.stringify(value));
+// Cool (blue) -> comfortable (green/yellow) -> warm (orange/red), fixed scale so
+// the same temperature always has the same colour.
+function colour(temperature) {
+  const stops = [[16, [126, 178, 221]], [19, [126, 178, 221]], [20.5, [205, 226, 90]],
+                 [21.5, [230, 196, 80]], [22.5, [232, 139, 76]], [25, [220, 90, 70]]];
+  const t = Number(temperature);
+  if (t <= stops[0][0]) return `rgb(${stops[0][1]})`;
+  for (let i = 1; i < stops.length; i += 1) {
+    const [t1, c1] = stops[i];
+    const [t0, c0] = stops[i - 1];
+    if (t <= t1) {
+      const k = (t - t0) / (t1 - t0);
+      return `rgb(${c0.map((v, j) => Math.round(v + (c1[j] - v) * k)).join(",")})`;
+    }
+  }
+  return `rgb(${stops[stops.length - 1][1]})`;
 }
 
 class GrentonScheduleCard extends HTMLElement {
   setConfig(config) {
     this._config = config || {};
-    this._drafts = this._drafts || {};
-    this._day = this._day ?? 0;
-    this._status = {};
-    if (this._hass) this._render();
+    this._dialog = null; // {id, week, day, saving, error, dirty}
+    if (this._hass) this._renderAll();
   }
 
   set hass(hass) {
+    const first = !this._hass;
     this._hass = hass;
-    this._render();
+    if (first || !this.shadowRoot) this._renderAll();
+    else this._renderTiles();
+    if (this._dialog && !this._dialog.dirty && !this._dialog.saving) {
+      // Follow CLU changes while the user has not edited anything
+      const week = hass.states[this._dialog.id]?.attributes.weekly_schedule;
+      if (week && JSON.stringify(week) !== JSON.stringify(this._dialog.base)) {
+        this._dialog.week = clone(week);
+        this._dialog.base = clone(week);
+        this._renderDialog();
+      }
+    }
   }
 
-  getCardSize() {
-    return 8;
-  }
+  getCardSize() { return 6; }
+  static getStubConfig() { return {}; }
 
-  static getStubConfig() {
-    return {};
-  }
+  get _t() { return TEXT[this._lang]; }
+  get _lang() { return (this._hass?.language || "en").startsWith("pl") ? "pl" : "en"; }
 
   _entities() {
     const hass = this._hass;
-    if (!hass) return [];
     const configured = this._config.entities || (this._config.entity ? [this._config.entity] : null);
     const ids = configured || Object.keys(hass.states).filter((id) =>
       id.startsWith("climate.")
       && hass.entities?.[id]?.platform === "grenton"
       && "schedule_status" in hass.states[id].attributes);
-    return ids.filter((id) => hass.states[id]).sort((a, b) =>
-      this._name(a).localeCompare(this._name(b)));
+    return ids.filter((id) => hass.states[id]).sort((a, b) => this._name(a).localeCompare(this._name(b)));
   }
 
-  _name(id) {
-    return this._hass.states[id]?.attributes.friendly_name || id;
-  }
+  _name(id) { return this._hass.states[id]?.attributes.friendly_name || id; }
 
-  _current() {
-    const entities = this._entities();
-    if (!entities.includes(this._selected)) this._selected = entities[0];
-    return this._selected;
-  }
-
-  _schedule(id) {
-    if (this._drafts[id]) return this._drafts[id];
-    const week = this._hass.states[id]?.attributes.weekly_schedule;
-    return week ? clone(week) : null;
-  }
-
-  _bounds(id) {
-    const a = this._hass.states[id].attributes;
-    return { min: Number(a.min_temp ?? 5), max: Number(a.max_temp ?? 35) };
-  }
-
-  _edit(id, mutate) {
-    const week = this._schedule(id);
-    if (!week) return;
-    mutate(week);
-    this._drafts[id] = week;
-    this._status[id] = null;
-    this._render();
-  }
-
-  _validate(id, week) {
-    const t = text(this._hass);
-    const { min, max } = this._bounds(id);
-    for (const day of DAYS) {
-      const periods = week[day] || [];
-      if (!periods.length || periods[0].time !== "00:00") return t.firstMidnight;
-      let previous = "";
-      for (const period of periods) {
-        if (!/^([01]\d|2[0-3]):(00|15|30|45)$/.test(period.time) || period.time <= previous) return t.order;
-        const temp = Number(period.temperature);
-        if (!(temp >= min && temp <= max) || Math.round(temp * 2) !== temp * 2) return t.range(min, max);
-        previous = period.time;
-      }
-    }
-    return null;
-  }
-
-  async _save(id) {
-    const week = this._drafts[id];
-    if (!week) return;
-    const sorted = {};
-    for (const day of DAYS) {
-      sorted[day] = [...week[day]].sort((a, b) => a.time.localeCompare(b.time))
-        .map((p) => ({ time: p.time, temperature: Number(p.temperature) }));
-    }
-    const error = this._validate(id, sorted);
-    if (error) {
-      this._status[id] = { error };
-      this._render();
-      return;
-    }
-    this._status[id] = { saving: true };
-    this._render();
-    try {
-      await this._hass.callService("grenton", "set_thermostat_schedule", { schedule: sorted }, { entity_id: id });
-      delete this._drafts[id];
-      this._status[id] = { saved: true };
-    } catch (err) {
-      this._status[id] = { error: err?.message || String(err) };
-    }
-    this._render();
-  }
-
-  _render() {
+  _renderAll() {
     if (!this._hass || !this._config) return;
-    const t = text(this._hass);
     if (!this.shadowRoot) this.attachShadow({ mode: "open" });
-    const root = this.shadowRoot;
-    root.innerHTML = `<style>${STYLE}</style>`;
-    const card = document.createElement("ha-card");
-    root.appendChild(card);
-    const title = document.createElement("h2");
-    title.textContent = this._config.title || t.title;
-    card.appendChild(title);
+    this.shadowRoot.innerHTML = `<style>${STYLE}</style><div class="wrap"></div><div class="dialog-root"></div>`;
+    this._renderTiles();
+    this._renderDialog();
+  }
 
+  // ---------------------------------------------------------------- tiles
+  _renderTiles() {
+    const t = this._t;
+    const wrap = this.shadowRoot.querySelector(".wrap");
+    wrap.innerHTML = "";
+    if (this._config.title) {
+      wrap.appendChild(Object.assign(document.createElement("div"), { className: "heading", textContent: this._config.title }));
+    }
     const entities = this._entities();
     if (!entities.length) {
+      const card = document.createElement("ha-card");
+      card.className = "tile";
       card.appendChild(Object.assign(document.createElement("div"), { className: "muted", textContent: t.none }));
+      wrap.appendChild(card);
       return;
     }
-    const id = this._current();
+    const tiles = document.createElement("div");
+    tiles.className = "tiles";
+    for (const id of entities) tiles.appendChild(this._tile(id));
+    wrap.appendChild(tiles);
+  }
 
-    if (entities.length > 1) {
-      const tabs = document.createElement("div");
-      tabs.className = "tabs";
-      for (const entity of entities) {
-        const tab = document.createElement("button");
-        tab.className = `tab${entity === id ? " active" : ""}${this._drafts[entity] ? " dirty" : ""}`;
-        tab.textContent = this._name(entity);
-        tab.onclick = () => { this._selected = entity; this._render(); };
-        tabs.appendChild(tab);
-      }
-      card.appendChild(tabs);
-    }
-
+  _tile(id) {
+    const t = this._t;
+    const lang = this._lang;
     const state = this._hass.states[id];
-    if (state.state !== "auto" && state.state !== "off") {
-      const warn = document.createElement("div");
-      warn.className = "warn";
-      warn.appendChild(Object.assign(document.createElement("span"), { textContent: t.notAuto }));
-      const auto = Object.assign(document.createElement("button"), { className: "btn", textContent: t.setAuto });
-      auto.onclick = () => this._hass.callService("climate", "set_hvac_mode", { entity_id: id, hvac_mode: "auto" });
-      warn.appendChild(auto);
-      card.appendChild(warn);
-    }
+    const a = state.attributes;
+    const card = document.createElement("ha-card");
+    card.className = "tile";
 
-    const week = this._schedule(id);
-    if (!week) {
-      card.appendChild(Object.assign(document.createElement("div"), {
-        className: "muted",
-        textContent: `${t.noSchedule} ${state.attributes.schedule_status || ""}`,
-      }));
-      return;
-    }
-    const { min, max } = this._bounds(id);
+    const action = a.hvac_action;
+    const chipClass = action === "heating" ? "heating" : action === "cooling" ? "cooling" : "";
+    const chipText = state.state === "off" ? t.offState
+      : action === "heating" ? t.heating : action === "cooling" ? t.cooling : t.idle;
+    card.innerHTML = `
+      <div class="top"><div class="name">🔥<span></span></div><div class="chip ${chipClass}"></div></div>
+      <div class="current"></div>
+      <div class="setpoint"><button class="round minus">−</button><div><small>${t.setpoint}</small><b></b></div><button class="round plus">+</button></div>
+      <div class="modes"></div>
+      <button class="wide">🗓 ${t.schedule}</button>`;
+    card.querySelector(".name span").textContent = this._name(id);
+    card.querySelector(".chip").textContent = chipText;
+    card.querySelector(".current").textContent =
+      a.current_temperature != null ? `${fmt(a.current_temperature, lang, 1)}°` : "–";
+    const target = a.temperature;
+    card.querySelector(".setpoint b").textContent = target != null ? `${fmt(target, lang, 1)}°` : "–";
 
-    const days = document.createElement("div");
-    days.className = "tabs";
-    t.days.forEach((label, index) => {
+    const step = Number(a.target_temp_step || 0.5);
+    const change = (delta) => {
+      const next = Math.min(Number(a.max_temp ?? 35), Math.max(Number(a.min_temp ?? 5), Number(target) + delta));
+      this._hass.callService("climate", "set_temperature", { entity_id: id, temperature: next });
+    };
+    const minus = card.querySelector(".minus");
+    const plus = card.querySelector(".plus");
+    minus.disabled = plus.disabled = target == null || state.state === "off";
+    minus.onclick = () => change(-step);
+    plus.onclick = () => change(step);
+
+    const modes = card.querySelector(".modes");
+    const available = a.hvac_modes || ["off", "heat", "auto"];
+    for (const [mode, label] of [["off", t.off], ["heat", t.heat], ["cool", t.cool], ["auto", t.auto]]) {
+      if (!available.includes(mode)) continue;
       const button = document.createElement("button");
-      button.className = `tab${index === this._day ? " active" : ""}`;
+      button.className = `mode ${mode}${state.state === mode ? " active" : ""}`;
       button.textContent = label;
-      button.onclick = () => { this._day = index; this._render(); };
-      days.appendChild(button);
-    });
-    card.appendChild(days);
+      button.onclick = () => this._hass.callService("climate", "set_hvac_mode", { entity_id: id, hvac_mode: mode });
+      modes.appendChild(button);
+    }
+    modes.style.gridTemplateColumns = `repeat(${modes.children.length}, 1fr)`;
+    card.querySelector(".wide").onclick = () => this._open(id);
+    return card;
+  }
 
-    const day = DAYS[this._day];
-    const periods = week[day];
-    card.appendChild(this._bar(periods, min, max));
+  // ---------------------------------------------------------------- dialog
+  _open(id) {
+    const week = this._hass.states[id]?.attributes.weekly_schedule;
+    const today = (new Date().getDay() + 6) % 7;
+    this._dialog = { id, week: week ? clone(week) : null, base: week ? clone(week) : null, day: today, dirty: false };
+    this._renderDialog();
+  }
+
+  _close() {
+    this._dialog = null;
+    this._renderDialog();
+  }
+
+  _bounds() {
+    const a = this._hass.states[this._dialog.id].attributes;
+    return { min: Number(a.min_temp ?? 5), max: Number(a.max_temp ?? 35), step: Number(a.target_temp_step || 0.5) };
+  }
+
+  _edit(mutate) {
+    mutate(this._dialog.week);
+    for (const day of DAYS) this._dialog.week[day].sort((p, q) => minutes(p.time) - minutes(q.time));
+    this._dialog.dirty = true;
+    this._dialog.error = null;
+    this._renderDialog();
+  }
+
+  _renderDialog() {
+    const root = this.shadowRoot?.querySelector(".dialog-root");
+    if (!root) return;
+    root.innerHTML = "";
+    const d = this._dialog;
+    if (!d) return;
+    const t = this._t;
+    const lang = this._lang;
+    const state = this._hass.states[d.id];
+
+    const backdrop = document.createElement("div");
+    backdrop.className = "backdrop";
+    backdrop.onclick = (event) => { if (event.target === backdrop && !d.dirty) this._close(); };
+    const dialog = document.createElement("div");
+    dialog.className = "dialog";
+    backdrop.appendChild(dialog);
 
     const head = document.createElement("div");
-    head.className = "row head";
-    head.innerHTML = `<span>${t.start}</span><span>${t.temperature} (°C)</span><span></span>`;
-    card.appendChild(head);
+    head.className = "dialog-head";
+    head.innerHTML = `<h3>🗓 <span></span></h3><button class="close" title="${t.cancel}">✕</button>`;
+    head.querySelector("span").textContent = t.title(this._name(d.id));
+    head.querySelector(".close").onclick = () => this._close();
+    dialog.appendChild(head);
+
+    if (state && state.state !== "auto" && state.state !== "off") {
+      const warn = document.createElement("div");
+      warn.className = "warn";
+      warn.innerHTML = `<span>${t.notAuto}</span>`;
+      const auto = Object.assign(document.createElement("button"), { className: "pill", textContent: t.setAuto });
+      auto.onclick = () => this._hass.callService("climate", "set_hvac_mode", { entity_id: d.id, hvac_mode: "auto" });
+      warn.appendChild(auto);
+      dialog.appendChild(warn);
+    }
+
+    if (!d.week) {
+      dialog.appendChild(Object.assign(document.createElement("div"), {
+        className: "muted", textContent: `${t.noSchedule} ${state?.attributes.schedule_status || ""}`,
+      }));
+      root.appendChild(backdrop);
+      return;
+    }
+
+    // Week overview
+    const week = document.createElement("div");
+    week.className = "week";
+    DAYS.forEach((day, index) => {
+      const label = Object.assign(document.createElement("div"), {
+        className: `day${index === d.day ? " selected" : ""}`, textContent: t.days[index],
+      });
+      const row = document.createElement("div");
+      row.className = `row${index === d.day ? " selected" : ""}`;
+      const periods = d.week[day];
+      periods.forEach((period, i) => {
+        const start = minutes(period.time);
+        const end = i + 1 < periods.length ? minutes(periods[i + 1].time) : 1440;
+        const seg = document.createElement("div");
+        seg.className = "seg";
+        seg.style.flex = String(end - start);
+        seg.style.background = colour(period.temperature);
+        seg.textContent = end - start >= 90 ? `${fmt(period.temperature, lang)}°` : "";
+        seg.title = `${period.time}–${hhmm(end)}: ${fmt(period.temperature, lang)} °C`;
+        row.appendChild(seg);
+      });
+      const select = () => { d.day = index; this._renderDialog(); };
+      label.onclick = select;
+      row.onclick = select;
+      week.append(label, row);
+    });
+    const axis = document.createElement("div");
+    axis.className = "axis";
+    axis.innerHTML = "<span>0</span><span>6</span><span>12</span><span>18</span><span>24</span>";
+    week.append(document.createElement("div"), axis);
+    dialog.appendChild(week);
+
+    // Day editor
+    const { min, max, step } = this._bounds();
+    const day = DAYS[d.day];
+    const periods = d.week[day];
+    const editor = document.createElement("div");
+    editor.className = "editor";
+    const editorHead = document.createElement("div");
+    editorHead.className = "editor-head";
+    editorHead.innerHTML = `<h4>${t.dayNames[d.day]}</h4><div class="copy">${t.copy}</div>`;
+    const copy = editorHead.querySelector(".copy");
+    for (const [label, targets] of [[t.weekdays, DAYS.slice(0, 5)], [t.weekend, DAYS.slice(5)], [t.week, DAYS]]) {
+      const pill = Object.assign(document.createElement("button"), { className: "pill", textContent: label });
+      pill.onclick = () => this._edit((w) => { for (const target of targets) w[target] = clone(w[day]); });
+      copy.appendChild(pill);
+    }
+    editor.appendChild(editorHead);
 
     periods.forEach((period, index) => {
+      const start = minutes(period.time);
+      const prev = index > 0 ? minutes(periods[index - 1].time) : 0;
+      const next = index + 1 < periods.length ? minutes(periods[index + 1].time) : 1440;
       const row = document.createElement("div");
-      row.className = "row";
-      const time = document.createElement("div");
-      time.className = "time";
-      const [hour, minute] = period.time.split(":");
-      const hours = document.createElement("select");
-      const minutes = document.createElement("select");
-      for (let h = 0; h < 24; h += 1) hours.add(new Option(String(h).padStart(2, "0")));
-      for (const m of ["00", "15", "30", "45"]) minutes.add(new Option(m));
-      hours.value = hour; minutes.value = minute;
-      const disabled = index === 0;
-      hours.disabled = minutes.disabled = disabled;
-      const change = () => this._edit(id, (w) => { w[day][index].time = `${hours.value}:${minutes.value}`; });
-      hours.onchange = change; minutes.onchange = change;
-      time.append(hours, document.createTextNode(":"), minutes);
+      row.className = "period";
+      const swatch = document.createElement("div");
+      swatch.className = "swatch";
+      swatch.style.background = colour(period.temperature);
 
-      const temp = document.createElement("input");
-      Object.assign(temp, { type: "number", step: "0.5", min: String(min), max: String(max), value: String(period.temperature) });
-      temp.onchange = () => this._edit(id, (w) => { w[day][index].temperature = Number(temp.value); });
-
-      const remove = Object.assign(document.createElement("button"), { className: "icon", textContent: "×", title: t.remove });
+      let time;
+      if (index === 0) {
+        time = Object.assign(document.createElement("div"), { className: "fixed", textContent: "00:00" });
+      } else {
+        time = document.createElement("select");
+        for (let m = prev + 15; m < next; m += 15) time.add(new Option(hhmm(m), hhmm(m)));
+        time.value = period.time;
+        time.onchange = () => this._edit((w) => { w[day][index].time = time.value; });
+      }
+      const until = Object.assign(document.createElement("div"), { className: "until", textContent: `– ${next === 1440 ? "24:00" : hhmm(next)}` });
+      const minus = Object.assign(document.createElement("button"), { className: "round", textContent: "−" });
+      const temp = Object.assign(document.createElement("div"), { className: "temp", textContent: `${fmt(period.temperature, lang)}°` });
+      const plus = Object.assign(document.createElement("button"), { className: "round", textContent: "+" });
+      minus.disabled = Number(period.temperature) - step < min - 1e-9;
+      plus.disabled = Number(period.temperature) + step > max + 1e-9;
+      minus.onclick = () => this._edit((w) => { w[day][index].temperature = Number(period.temperature) - step; });
+      plus.onclick = () => this._edit((w) => { w[day][index].temperature = Number(period.temperature) + step; });
+      const remove = Object.assign(document.createElement("button"), { className: "x", textContent: "✕", title: t.remove });
       remove.disabled = index === 0;
-      remove.onclick = () => this._edit(id, (w) => { w[day].splice(index, 1); });
-      row.append(time, temp, remove);
-      card.appendChild(row);
+      remove.onclick = () => this._edit((w) => { w[day].splice(index, 1); });
+      row.append(swatch, time, until, minus, temp, plus, remove);
+      editor.appendChild(row);
     });
 
-    const actions = document.createElement("div");
-    actions.className = "actions";
-    const add = Object.assign(document.createElement("button"), { className: "btn", textContent: `+ ${t.add}` });
-    const last = periods[periods.length - 1];
-    const [lh, lm] = last.time.split(":").map(Number);
-    const next = lh * 60 + lm + 60 <= 23 * 60 + 45 ? lh * 60 + lm + 60 : lh * 60 + lm + 15;
-    add.disabled = last.time === "23:45";
-    add.onclick = () => this._edit(id, (w) => {
-      const minutesTotal = Math.min(next, 23 * 60 + 45);
-      w[day].push({
-        time: `${String(Math.floor(minutesTotal / 60)).padStart(2, "0")}:${String(minutesTotal % 60).padStart(2, "0")}`,
-        temperature: last.temperature,
-      });
+    // New change: middle of the longest period, on a quarter hour
+    let best = null;
+    periods.forEach((period, index) => {
+      const start = minutes(period.time);
+      const end = index + 1 < periods.length ? minutes(periods[index + 1].time) : 1440;
+      if (end - start >= 30 && (!best || end - start > best.length)) best = { start, length: end - start, temperature: period.temperature };
     });
-    actions.appendChild(add);
-    actions.appendChild(Object.assign(document.createElement("span"), { className: "muted", textContent: `${t.copy}:` }));
-    for (const [label, targets] of [[t.weekdays, DAYS.slice(0, 5)], [t.weekend, DAYS.slice(5)], [t.week, DAYS]]) {
-      const copy = Object.assign(document.createElement("button"), { className: "btn", textContent: label });
-      copy.onclick = () => this._edit(id, (w) => { for (const target of targets) w[target] = clone(w[day]); });
-      actions.appendChild(copy);
-    }
-    card.appendChild(actions);
+    const add = Object.assign(document.createElement("button"), { className: "add", textContent: `+ ${t.add}` });
+    add.disabled = !best;
+    add.onclick = () => this._edit((w) => {
+      const at = best.start + Math.max(15, Math.round(best.length / 2 / 15) * 15);
+      w[day].push({ time: hhmm(at), temperature: best.temperature });
+    });
+    editor.appendChild(add);
+    dialog.appendChild(editor);
 
     const footer = document.createElement("div");
-    footer.className = "actions";
-    const status = this._status[id] || {};
-    const dirty = Boolean(this._drafts[id]);
-    const save = Object.assign(document.createElement("button"), {
-      className: "btn primary", textContent: status.saving ? t.saving : t.save,
-    });
-    save.disabled = !dirty || status.saving;
-    save.onclick = () => this._save(id);
-    const discard = Object.assign(document.createElement("button"), { className: "btn", textContent: t.discard });
-    discard.disabled = !dirty || status.saving;
-    discard.onclick = () => { delete this._drafts[id]; this._status[id] = null; this._render(); };
-    footer.append(save, discard);
-    if (dirty && !status.saving) footer.appendChild(Object.assign(document.createElement("span"), { className: "muted", textContent: t.unsaved }));
-    if (status.saved) footer.appendChild(Object.assign(document.createElement("span"), { className: "muted", textContent: `✓ ${t.saved}` }));
-    card.appendChild(footer);
-    if (status.error) card.appendChild(Object.assign(document.createElement("div"), { className: "error", textContent: status.error }));
+    footer.className = "footer";
+    if (d.error) footer.appendChild(Object.assign(document.createElement("div"), { className: "error", textContent: d.error }));
+    const cancel = Object.assign(document.createElement("button"), { className: "btn", textContent: t.cancel });
+    cancel.onclick = () => this._close();
+    const save = Object.assign(document.createElement("button"), { className: "btn primary", textContent: d.saving ? t.saving : t.save });
+    save.disabled = !d.dirty || d.saving;
+    save.onclick = () => this._save();
+    footer.append(cancel, save);
+    dialog.appendChild(footer);
+    root.appendChild(backdrop);
   }
 
-  _bar(periods, min, max) {
-    const bar = document.createElement("div");
-    bar.className = "bar";
-    const sorted = [...periods].sort((a, b) => a.time.localeCompare(b.time));
-    sorted.forEach((period, index) => {
-      const start = this._minutes(period.time);
-      const end = index + 1 < sorted.length ? this._minutes(sorted[index + 1].time) : 1440;
-      const ratio = max > min ? (Number(period.temperature) - min) / (max - min) : 0.5;
-      const segment = document.createElement("div");
-      segment.style.flex = String(Math.max(end - start, 0));
-      segment.style.background = `hsl(${Math.round(220 - 200 * Math.min(Math.max(ratio, 0), 1))}, 70%, 50%)`;
-      segment.title = `${period.time} ${period.temperature} °C`;
-      bar.appendChild(segment);
-    });
-    return bar;
-  }
-
-  _minutes(time) {
-    const [h, m] = time.split(":").map(Number);
-    return h * 60 + m;
+  async _save() {
+    const d = this._dialog;
+    const { min, max } = this._bounds();
+    for (const day of DAYS) {
+      for (const period of d.week[day]) {
+        if (period.temperature < min || period.temperature > max) {
+          d.error = this._t.range(min, max);
+          this._renderDialog();
+          return;
+        }
+      }
+    }
+    d.saving = true;
+    d.error = null;
+    this._renderDialog();
+    try {
+      const schedule = Object.fromEntries(DAYS.map((day) => [day,
+        d.week[day].map((p) => ({ time: p.time, temperature: Number(p.temperature) }))]));
+      await this._hass.callService("grenton", "set_thermostat_schedule", { schedule }, { entity_id: d.id });
+      this._close();
+    } catch (err) {
+      d.saving = false;
+      d.error = err?.message || String(err);
+      this._renderDialog();
+    }
   }
 }
 
@@ -1007,8 +1130,8 @@ if (!customElements.get("grenton-schedule-card")) {
   window.customCards = window.customCards || [];
   window.customCards.push({
     type: "grenton-schedule-card",
-    name: "Grenton – thermostat schedule",
-    description: "Edit the weekly schedule of Grenton thermostats.",
+    name: "Grenton – thermostat & schedule",
+    description: "Grenton thermostats with setpoint, mode and a weekly schedule editor.",
     preview: false,
   });
 }

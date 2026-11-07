@@ -21,7 +21,7 @@ Custom Home Assistant integration for **Grenton Smart Home** system. Seamlessly 
 - **🏠 Multiple Widget Types** - Support for lights, switches, dimmers, sensors, covers, and more
 - **Thermostats** - `THERMOSTAT_V2` climate entities with heating, optional cooling, a weekly schedule editor, temperature readings, and activity status
 - **⚙️ Per-Entity Configuration** - Customize device class and unit of measurement for each supported entity through the UI
-- **🗓 Schedule card** - Edit every thermostat's weekly schedule right on the dashboard
+- **🗓 Thermostat card** - Setpoint, modes and a visual weekly schedule editor right on the dashboard
 - **🌡 Older thermostats** - `THERMOSTAT` widgets get the same climate entity as `THERMOSTAT_V2`; the target is shown also while following the schedule, plus a **Target temperature** sensor
 - **🧩 Objects outside the interface** - Add any `CLU->OBJECT` (switch, light, dimmer, LED, cover, thermostat, sensor, script) over **UDP** or **Gate HTTP**, Z-Wave variants included
 - **🌐 Gate HTTP** - Batched polling, optional webhook push for instant updates, connectivity sensor
@@ -504,26 +504,27 @@ language (English/Polish) and time zone; the time zone should match the CLU cloc
 Before valid schedule data arrives, its state is unknown. The climate entity's
 existing ID and the thermostat's device name stay unchanged.
 
-#### Schedule card on the dashboard
+#### Thermostat card with schedule editor
 
-The integration ships a dashboard card for editing schedules directly. Edit a
-dashboard → **Add card** → search for **Grenton – thermostat schedule**, or add it
-in YAML:
+The integration ships a dashboard card. Edit a dashboard → **Add card** → search
+for **Grenton – thermostat & schedule**, or add it in YAML:
 
 ```yaml
 type: custom:grenton-schedule-card
-# optional – by default the card lists every Grenton thermostat
-entities:
+title: Heating           # optional
+entities:                # optional – by default every Grenton thermostat
   - climate.ogrzewanie_sypialnia
-title: Heating schedule
 ```
 
-Pick a thermostat and a day, change start times (15-minute steps) and
-temperatures (0.5 °C, within the thermostat limits), add or remove periods, copy
-a day to Mon–Fri, Sat–Sun or the whole week, then **Save to CLU**. The card warns
-when the thermostat is not in Auto and can switch it. Unsaved edits are kept per
-thermostat until you save or discard them. Saving uses
-`grenton.set_thermostat_schedule`, so the same validation applies.
+Each thermostat gets a tile with its status (heating/idle/off), current
+temperature, setpoint **−/+**, **Off / Heat / Auto** and a **Schedule** button.
+The schedule opens in a dialog: the whole week as coloured temperature blocks
+(click a day to edit it) and the selected day as a list of temperature changes
+with start time, end time and **−/+** temperature (0.5 °C, within the thermostat
+limits). Add or remove changes, copy the day to weekdays, the weekend or the
+whole week, then **Save** – the schedule is written to the CLU with
+`grenton.set_thermostat_schedule`. The card follows the Home Assistant theme
+(light and dark) and works on phones.
 
 #### Weekly schedules
 
@@ -893,6 +894,9 @@ Configure sliders with appropriate device classes for proper representation:
 4. Check Grenton device is responding to queries
 
 ## 📋 Changelog
+
+### 0.4.1
+- Thermostat card redesigned: tiles with status, setpoint −/+, modes and a schedule dialog with a week overview and day editor
 
 ### 0.4.0
 - **Thermostat schedule card** for dashboards (`custom:grenton-schedule-card`): edit the weekly schedule of every Grenton thermostat without opening Configure
