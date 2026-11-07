@@ -203,7 +203,8 @@ power failure.
 
 **Settings → Devices & services → Grenton → ⋮ → Download diagnostics** gives the
 interface JSON (PIN and encryption keys redacted), the exact validation error
-of every skipped widget, CLU status and manual objects – attach it to issues.
+of every skipped widget, CLU status, manual objects and, per thermostat, the raw
+schedule with its decoding status – attach it to issues.
 
 #### Gate HTTP setup
 
@@ -870,6 +871,9 @@ Configure sliders with appropriate device classes for proper representation:
 4. Check Grenton device is responding to queries
 
 ## 📋 Changelog
+
+### 0.3.2
+- Diagnostics include every thermostat's raw schedule, its decoding status, limits and bindings
 
 ### 0.3.1
 - Thermostat target visible in schedule mode (Auto); changing it switches to manual
