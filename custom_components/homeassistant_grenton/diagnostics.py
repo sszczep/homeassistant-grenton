@@ -110,4 +110,17 @@ async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: Grenton
         "gate": gate,
         "devices": devices,
         "thermostats": thermostats if runtime is not None else [],
+        "restore_lights": _restore_info(runtime),
+    }
+
+
+def _restore_info(runtime) -> dict:
+    manager = getattr(runtime, "restore_manager", None)
+    if manager is None:
+        return {"enabled": False}
+    return {
+        "enabled": True,
+        "lights": manager._light_clu,
+        "clu_boot": manager._data.get("boot", {}),
+        "history": manager._data.get("lights", {}),
     }

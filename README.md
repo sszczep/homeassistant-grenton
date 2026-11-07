@@ -24,6 +24,7 @@ Custom Home Assistant integration for **Grenton Smart Home** system. Seamlessly 
 - **🗓 Thermostat card** - Setpoint, modes and a visual weekly schedule editor right on the dashboard
 - **🌡 Older thermostats** - `THERMOSTAT` widgets get the same climate entity as `THERMOSTAT_V2`; the target is shown also while following the schedule, plus a **Target temperature** sensor
 - **🧩 Objects outside the interface** - Add any `CLU->OBJECT` (switch, light, dimmer, LED, cover, thermostat, sensor, script) over **UDP** or **Gate HTTP**, Z-Wave variants included
+- **💡 Lights back after a CLU restart** - After a power failure lights return to how they were (on/off, brightness, colour), with exclusions
 - **🌐 Gate HTTP** - Batched polling, optional webhook push for instant updates, connectivity sensor
 - **🏷 Names, areas, units and precision** - Set them per page while importing, change them later in **Configure**
 - **🔁 Migration from Grenton Objects** - Import objects and keep their `entity_id`, names, icons and areas
@@ -322,6 +323,20 @@ shown as unknown. Other entities show unknown for stale polled fields.
 Polling reduces change reports and, when it removes subscription groups, their
 refreshes. It adds a request per batch per interval, so the traffic
 reduction depends on the number of values and their previous update frequency.
+
+### Restoring lights after a CLU restart
+
+**Configure → Restore lights after CLU restart** – turn it on and optionally pick lights to skip
+(e.g. outdoor lights driven by a schedule). Off by default.
+
+- Every change of a Grenton light (on/off, brightness, colour) is saved with its time; the history
+  survives a Home Assistant restart, so it also works when HA and the CLU lose power together.
+- A restart is recognised by the CLU **Uptime** sensor going back (boot time = now − uptime).
+  When lights come back from *unavailable*, Uptime is read at once, so this takes seconds.
+- Each light of that CLU is set to its last state from **before** the restart; lights already in that
+  state are left alone. A plain network outage (Uptime keeps counting) changes nothing.
+- Uploading a new configuration from Object Manager also restarts the CLU, so lights are restored then too.
+- Lights over Gate HTTP are not covered (no Uptime). Diagnostics show the saved history and boot times.
 
 ### CLU connections and cleanup
 
@@ -894,6 +909,9 @@ Configure sliders with appropriate device classes for proper representation:
 4. Check Grenton device is responding to queries
 
 ## 📋 Changelog
+
+### 0.5.0
+- Restore lights after a CLU restart (opt-in in **Configure**, with exclusions); restart detected from Uptime, history kept across HA restarts
 
 ### 0.4.1
 - Thermostat card redesigned: tiles with status, setpoint −/+, modes and a schedule dialog with a week overview and day editor

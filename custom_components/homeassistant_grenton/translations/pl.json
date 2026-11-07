@@ -230,7 +230,8 @@
           "remove_object": "Usuń ręczne obiekty",
           "gate_settings": "Ustawienia Gate HTTP",
           "entity_names": "Nazwy, jednostki i dokładność",
-          "import_grenton_objects": "Importuj z Grenton Objects"
+          "import_grenton_objects": "Importuj z Grenton Objects",
+          "restore_lights": "Przywracanie świateł po restarcie CLU"
         }
       },
       "clu_read_settings": {
@@ -304,6 +305,17 @@
           "objects": "Obiekty",
           "prefer_udp": "Używaj UDP, gdy CLU jest w interfejsie myGrenton (stan na bieżąco)",
           "take_over": "Przejmij encje (usuń wpisy Grenton Objects, zachowaj entity_id)"
+        }
+      },
+      "restore_lights": {
+        "title": "Przywracanie świateł po restarcie CLU",
+        "description": "Po restarcie CLU (np. po zaniku zasilania) integracja ustawi światła tak, jak były tuż przed restartem – włącz/wyłącz, jasność i kolor. Restart rozpoznawany jest po wyzerowaniu sensora Uptime; zwykła utrata łączności niczego nie zmienia.",
+        "data": {
+          "enabled": "Przywracaj światła po restarcie CLU",
+          "exclude": "Wyklucz światła"
+        },
+        "data_description": {
+          "exclude": "Te światła zostaną pominięte (np. zewnętrzne sterowane harmonogramem)."
         }
       }
     },

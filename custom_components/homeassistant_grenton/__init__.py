@@ -127,6 +127,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: GrentonConfigEntr
         # Friendly names chosen during import become registry names once entities exist
         from .entity_settings import apply_name_overrides
         apply_name_overrides(hass, config_entry, None, config_entry.options.get(CONF_ENTITY_OVERRIDES))
+        await _async_start_light_restore(hass, config_entry, coordinator, devices, clu_entities)
     except BaseException:
         await coordinator.async_shutdown()
         raise
@@ -172,6 +173,21 @@ def _register_gate_webhook(
         local_only=True, allowed_methods=["POST"],
     )
     config_entry.async_on_unload(lambda: webhook.async_unregister(hass, webhook_id))
+
+
+async def _async_start_light_restore(hass, config_entry, coordinator, devices, clu_entities) -> None:
+    from homeassistant.components.light import LightEntity
+    from .domain.entities.clu_state import GrentonCluUptime
+    from .restore import CONF_RESTORE_LIGHTS, LightRestoreManager
+
+    settings = config_entry.options.get(CONF_RESTORE_LIGHTS) or {}
+    if not settings.get("enabled"):
+        return
+    lights = [e for d in devices for e in d.entities if isinstance(e, LightEntity) and e.entity_id]
+    uptimes = {e.clu.id: e for e in clu_entities if isinstance(e, GrentonCluUptime)}
+    manager = LightRestoreManager(hass, config_entry, coordinator, lights, uptimes, set(settings.get("exclude") or []))
+    await manager.async_start()
+    config_entry.runtime_data.restore_manager = manager
 
 
 def _structural_options(config_entry: ConfigEntry) -> tuple:
@@ -266,6 +282,9 @@ async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> 
     # Keep a working coordinator if HA cannot unload one of its platforms.
     unload_ok = await hass.config_entries.async_unload_platforms(config_entry, PLATFORMS)
     if unload_ok:
+        manager = getattr(config_entry.runtime_data, "restore_manager", None)
+        if manager is not None:
+            await manager.async_stop()
         await coordinator.async_shutdown()
     
     return unload_ok

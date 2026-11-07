@@ -32,6 +32,7 @@ class RuntimeData:
     gate_coordinator: Any = None
     # Snapshot of options that require a reload when changed
     structural_options: Any = None
+    restore_manager: Any = None
 
 
 type GrentonConfigEntry = ConfigEntry[RuntimeData]

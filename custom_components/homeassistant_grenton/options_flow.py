@@ -92,7 +92,7 @@ class GrentonOptionsFlow(OptionsFlowWithReload):
         # Startup can precede frontend setup. Ensure selectors exist when a
         # browser actually opens configuration, including after an update.
         await async_register_scene_editor(self.hass, notify_clients=True)
-        menu = ["clu_read_settings", "entity_list", "entity_names", "add_object", "gate_settings"]
+        menu = ["clu_read_settings", "entity_list", "entity_names", "add_object", "gate_settings", "restore_lights"]
         try:
             has_manual = bool(self.config_entry.options.get(CONF_MANUAL_OBJECTS))
         except (AttributeError, ValueError):  # flow not bound to an entry yet
@@ -345,6 +345,24 @@ class GrentonOptionsFlow(OptionsFlowWithReload):
             }),
             errors=errors,
             description_placeholders={"webhook_url": self._webhook_url(current.get(CONF_GATE_WEBHOOK_ID))},
+        )
+
+    async def async_step_restore_lights(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """Restore lights to their last state after a CLU restart."""
+        from .const import DOMAIN
+        from .restore import CONF_RESTORE_LIGHTS
+        current: dict[str, Any] = dict(self.config_entry.options.get(CONF_RESTORE_LIGHTS) or {})
+        if user_input is not None:
+            value = {"enabled": bool(user_input.get("enabled")), "exclude": list(user_input.get("exclude") or [])}
+            return self.async_create_entry(title="", data=self._options_with(CONF_RESTORE_LIGHTS, value))
+        return self.async_show_form(
+            step_id="restore_lights",
+            data_schema=vol.Schema({
+                vol.Optional("enabled", default=bool(current.get("enabled"))): bool,
+                vol.Optional("exclude", default=list(current.get("exclude") or [])): selector.EntitySelector(
+                    selector.EntitySelectorConfig(domain="light", integration=DOMAIN, multiple=True)
+                ),
+            }),
         )
 
     def _webhook_url(self, webhook_id: str | None) -> str:
