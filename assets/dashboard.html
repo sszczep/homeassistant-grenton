@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { width: 2192px; height: 910px; background: #111111; font-family: Inter, sans-serif; color: #e1e1e1; padding: 56px 64px; }
+  h1 { text-align: center; font-size: 46px; font-weight: 600; color: #f2f2f2; }
+  .chips { display: flex; justify-content: center; gap: 16px; margin-top: 26px; }
+  .chip { border: 1px solid #333; border-radius: 28px; padding: 12px 22px; font-size: 19px; display: flex; align-items: center; gap: 10px; color: #d6d6d6; }
+  .dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+  .grid { display: grid; grid-template-columns: 1.15fr 1fr 1fr; gap: 36px; margin-top: 52px; }
+  .col h2 { font-size: 24px; font-weight: 500; margin-bottom: 18px; display: flex; align-items: center; gap: 12px; color: #e8e8e8; }
+  .card { background: #1c1c1c; border: 1px solid #2b2b2b; border-radius: 16px; padding: 24px 26px; margin-bottom: 18px; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .label { font-size: 20px; color: #bdbdbd; }
+  .value { font-size: 40px; margin-top: 10px; color: #f0f0f0; }
+  .value small { font-size: 20px; color: #a9a9a9; margin-left: 6px; }
+  .muted { color: #8f8f8f; font-size: 17px; margin-top: 8px; }
+  .thermo { display: flex; gap: 26px; align-items: center; }
+  .dial { position: relative; width: 300px; height: 300px; flex: none; }
+  .dial .center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .dial .mode { font-size: 18px; color: #f0a54a; letter-spacing: .5px; }
+  .dial .target { font-size: 66px; font-weight: 500; color: #f5f5f5; margin: 4px 0; }
+  .dial .target span { font-size: 28px; color: #bbb; }
+  .dial .current { font-size: 19px; color: #a8a8a8; }
+  .modes { display: flex; gap: 10px; margin-top: 18px; }
+  .mbtn { width: 56px; height: 44px; border-radius: 12px; background: #262626; display: flex; align-items: center; justify-content: center; font-size: 15px; color: #aaa; }
+  .mbtn.on { background: #3a2c17; color: #f0a54a; border: 1px solid #6b4a1c; }
+  .bar { height: 46px; border-radius: 12px; background: #272727; margin-top: 16px; overflow: hidden; display: flex; }
+  .seg { height: 100%; }
+  .tile { display: flex; align-items: center; gap: 18px; }
+  .ico { width: 54px; height: 54px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex: none; }
+  .state { font-size: 18px; color: #9e9e9e; margin-top: 4px; }
+  .name { font-size: 21px; color: #ededed; }
+  .tag { font-size: 14px; border-radius: 8px; padding: 3px 9px; margin-left: 8px; vertical-align: middle; }
+  .udp { background: #15324a; color: #67b7f2; }
+  .gate { background: #3a2c17; color: #f0a54a; }
+  .btns { display: flex; gap: 14px; margin-top: 14px; }
+  .sbtn { flex: 1; background: #262626; border-radius: 12px; padding: 16px; text-align: center; font-size: 19px; color: #e0e0e0; }
+  .ok { color: #7cc97f; }
+</style></head>
+<body>
+  <h1>Ground floor</h1>
+  <div class="chips">
+    <div class="chip"><span class="dot" style="background:#4fa3e0"></span>19.8 °C</div>
+    <div class="chip"><span class="dot" style="background:#7cc97f"></span>CLU1 connected</div>
+    <div class="chip"><span class="dot" style="background:#f0a54a"></span>Gate HTTP connected</div>
+  </div>
+
+  <div class="grid">
+    <!-- Heating -->
+    <div class="col">
+      <h2>🌡&nbsp;Heating</h2>
+      <div class="card">
+        <div class="thermo">
+          <div class="dial">
+            <svg width="300" height="300" viewBox="0 0 300 300">
+              <path d="M 62 238 A 125 125 0 1 1 238 238" fill="none" stroke="#2e2e2e" stroke-width="16" stroke-linecap="round"/>
+              <path d="M 62 238 A 125 125 0 1 1 222 46" fill="none" stroke="#f0a54a" stroke-width="16" stroke-linecap="round"/>
+              <circle cx="222" cy="46" r="13" fill="#111" stroke="#f0a54a" stroke-width="6"/>
+            </svg>
+            <div class="center">
+              <div class="mode">AUTO · SCHEDULE</div>
+              <div class="target">20.5<span> °C</span></div>
+              <div class="current">🌡 19.8 °C · heating</div>
+            </div>
+          </div>
+          <div style="flex:1">
+            <div class="name">Ania</div>
+            <div class="muted">THERMOSTAT widget</div>
+            <div class="modes">
+              <div class="mbtn">OFF</div><div class="mbtn">HEAT</div><div class="mbtn on">AUTO</div>
+            </div>
+            <div class="muted" style="margin-top:18px">Target from the schedule,<br>change it to switch to manual</div>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="card"><div class="label">Target temperature</div><div class="value">20.5<small>°C</small></div></div>
+        <div class="card"><div class="label">Schedule</div><div class="value" style="font-size:28px;margin-top:16px">Mon–Fri</div>
+          <div class="bar">
+            <div class="seg" style="width:25%;background:#2b3a4a"></div><div class="seg" style="width:12%;background:#6b4a1c"></div>
+            <div class="seg" style="width:35%;background:#2b3a4a"></div><div class="seg" style="width:20%;background:#6b4a1c"></div>
+            <div class="seg" style="width:8%;background:#2b3a4a"></div>
+          </div></div>
+      </div>
+    </div>
+
+    <!-- Lights & scenes -->
+    <div class="col">
+      <h2>💡&nbsp;Lights &amp; scenes</h2>
+      <div class="card tile"><div class="ico" style="background:#4a3a14">💡</div>
+        <div><div class="name">Ceiling lamp</div><div class="state">On · 80 %</div></div></div>
+      <div class="card tile"><div class="ico" style="background:#262626">💡</div>
+        <div><div class="name">Wall light</div><div class="state">Off</div></div></div>
+      <div class="card tile"><div class="ico" style="background:#3b2236">🌈</div>
+        <div><div class="name">LED strip <span class="tag gate">Gate</span></div><div class="state">On · RGBW</div></div></div>
+      <div class="card">
+        <div class="name">Garage door</div><div class="muted">SCENE_DOUBLE</div>
+        <div class="btns"><div class="sbtn">Open</div><div class="sbtn">Close</div></div>
+      </div>
+    </div>
+
+    <!-- System -->
+    <div class="col">
+      <h2>🔌&nbsp;System &amp; manual objects</h2>
+      <div class="card">
+        <div class="label">CLU1 connection</div><div class="value ok" style="font-size:32px">Connected</div>
+        <div class="muted">last seen a few seconds ago</div>
+      </div>
+      <div class="card">
+        <div class="label">Gate HTTP</div><div class="value ok" style="font-size:32px">Connected</div>
+        <div class="muted">webhook push + polling fallback</div>
+      </div>
+      <div class="card tile"><div class="ico" style="background:#15324a">⚙️</div>
+        <div><div class="name">Circulation pump <span class="tag udp">UDP</span></div><div class="state">CLU221001234 → DOU5678</div></div></div>
+      <div class="card tile"><div class="ico" style="background:#3a2c17">🌡</div>
+        <div><div class="name">Outdoor temperature <span class="tag gate">Gate</span></div><div class="state">4.6 °C · user feature</div></div></div>
+    </div>
+  </div>
+</body></html>
