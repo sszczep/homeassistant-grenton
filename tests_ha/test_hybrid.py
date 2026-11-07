@@ -868,3 +868,37 @@ async def test_thermostat_schedule_shows_target_and_change_switches_to_manual(ha
         assert 'THE1270:set(8,"0")' in executed  # manual mode
         assert executed[-1] == 'THE1270:set(6,"1")'
         await hass.config_entries.async_unload(entry.entry_id)
+
+
+
+async def test_schedule_card_module_is_served(hass: HomeAssistant, hass_client):
+    """The dashboard card is registered as a frontend module with a hashed URL."""
+    from homeassistant.setup import async_setup_component
+    assert await async_setup_component(hass, "http", {})
+    # The frontend package is not installed in tests; record the module URLs instead
+    hass.config.components.add("frontend")
+    loaded = []
+    entry = MockConfigEntry(domain="grenton", unique_id="iface1", title="iface1",
+                            data={"ip_address": "x", "port": "9998", "pin": "1", "interface": INTERFACE})
+    entry.add_to_hass(hass)
+    api = "custom_components.grenton.domain.api.clu.GrentonCluApi"
+
+    async def register(self, keys, **kwargs):
+        return [0 for _ in keys]
+
+    with patch(f"{api}.connect", AsyncMock(return_value=True)), \
+         patch(f"{api}.ping", AsyncMock(return_value=True)), \
+         patch(f"{api}.register_component_states", register), \
+         patch(f"{api}.disconnect", AsyncMock()), \
+         patch("homeassistant.components.frontend.add_extra_js_url", lambda hass, url: loaded.append(url)), \
+         patch("homeassistant.components.frontend.remove_extra_js_url", lambda hass, url: None):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+        # The card ships inside the integration's frontend module
+        url = hass.data["grenton"]["scene_editor_url"]
+        assert url in loaded
+        client = await hass_client()
+        response = await client.get(url)
+        assert response.status == 200
+        assert "grenton-schedule-card" in await response.text()
+        await hass.config_entries.async_unload(entry.entry_id)

@@ -642,3 +642,375 @@ class GrentonThermostatEditor extends GrentonEditor {
 if (!customElements.get("ha-selector-grenton_thermostat")) {
   customElements.define("ha-selector-grenton_thermostat", GrentonThermostatEditor);
 }
+
+// ---------------------------------------------------------------------------
+// Thermostat schedule dashboard card (scoped block: no clash with the selectors above)
+{
+// Grenton thermostat schedule card.
+//
+// Dashboard card that edits the weekly schedule of Grenton thermostats directly,
+// using the climate entity's `weekly_schedule`, `min_temp` and `max_temp`
+// attributes and the `grenton.set_thermostat_schedule` action.
+//
+//   type: custom:grenton-schedule-card
+//   entities:            # optional; default: every Grenton thermostat
+//     - climate.ogrzewanie_sypialnia
+//   title: Harmonogramy  # optional
+
+const DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+const TEXT = {
+  pl: {
+    title: "Harmonogram ogrzewania",
+    days: ["Pon", "Wt", "Śr", "Czw", "Pt", "Sob", "Nd"],
+    start: "Od", temperature: "Temperatura", add: "Dodaj okres", remove: "Usuń",
+    copy: "Kopiuj ten dzień na", weekdays: "Pon–Pt", weekend: "Sob–Nd", week: "Cały tydzień",
+    save: "Zapisz na CLU", discard: "Odrzuć zmiany", saving: "Zapisywanie…", saved: "Zapisano",
+    unsaved: "Niezapisane zmiany",
+    notAuto: "Termostat nie jest w trybie AUTO – harmonogram nie jest teraz używany.",
+    setAuto: "Włącz AUTO",
+    noSchedule: "Harmonogram nie został jeszcze odczytany z CLU.",
+    none: "Brak termostatów Grenton.",
+    firstMidnight: "Pierwszy okres musi zaczynać się o 00:00.",
+    order: "Godziny muszą rosnąć, co 15 minut.",
+    range: (min, max) => `Temperatura musi być w zakresie ${min}–${max} °C, co 0,5 °C.`,
+  },
+  en: {
+    title: "Heating schedule",
+    days: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+    start: "From", temperature: "Temperature", add: "Add period", remove: "Remove",
+    copy: "Copy this day to", weekdays: "Mon–Fri", weekend: "Sat–Sun", week: "Whole week",
+    save: "Save to CLU", discard: "Discard changes", saving: "Saving…", saved: "Saved",
+    unsaved: "Unsaved changes",
+    notAuto: "The thermostat is not in Auto – the schedule is not used right now.",
+    setAuto: "Switch to Auto",
+    noSchedule: "The schedule has not been read from the CLU yet.",
+    none: "No Grenton thermostats.",
+    firstMidnight: "The first period must start at 00:00.",
+    order: "Start times must increase in 15-minute steps.",
+    range: (min, max) => `Temperature must be within ${min}–${max} °C in 0.5 °C steps.`,
+  },
+};
+
+const STYLE = `
+  :host { display: block; }
+  ha-card { padding: 16px; color: var(--primary-text-color); }
+  h2 { color: var(--primary-text-color); margin: 0 0 12px; font-size: 20px; font-weight: 500; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .tab { border: 1px solid var(--divider-color); background: none; color: var(--primary-text-color);
+         border-radius: 16px; padding: 6px 12px; cursor: pointer; font: inherit; }
+  .tab.active { background: var(--primary-color); color: var(--text-primary-color, #fff); border-color: var(--primary-color); }
+  .tab.dirty::after { content: " •"; }
+  .warn { background: rgba(var(--rgb-warning-color, 255,152,0), .15); border-radius: 8px;
+          padding: 8px 12px; margin-bottom: 12px; display: flex; gap: 12px; align-items: center;
+          justify-content: space-between; font-size: 14px; }
+  .error { color: var(--error-color); font-size: 14px; margin: 8px 0; }
+  .muted { color: var(--secondary-text-color); font-size: 14px; }
+  .row { display: grid; grid-template-columns: 1fr 1fr 40px; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .head { font-size: 13px; color: var(--secondary-text-color); margin-bottom: 4px; }
+  .time { display: flex; gap: 4px; align-items: center; }
+  select, input { font: inherit; color: var(--primary-text-color); background: var(--card-background-color);
+                  border: 1px solid var(--divider-color); border-radius: 6px; padding: 6px; min-height: 36px; width: 100%; }
+  button.icon { width: 36px; height: 36px; border-radius: 50%; border: none; background: none;
+                color: var(--secondary-text-color); cursor: pointer; font-size: 20px; }
+  button.icon:disabled { opacity: .3; cursor: default; }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; align-items: center; }
+  .btn { border: 1px solid var(--divider-color); background: none; color: var(--primary-text-color);
+         border-radius: 8px; padding: 6px 12px; cursor: pointer; font: inherit; }
+  .btn.primary { background: var(--primary-color); border-color: var(--primary-color); color: var(--text-primary-color, #fff); }
+  .btn:disabled { opacity: .5; cursor: default; }
+  .bar { display: flex; height: 10px; border-radius: 5px; overflow: hidden; margin: 4px 0 12px; }
+`;
+
+function text(hass) {
+  return TEXT[(hass?.language || "en").startsWith("pl") ? "pl" : "en"];
+}
+
+function clone(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+class GrentonScheduleCard extends HTMLElement {
+  setConfig(config) {
+    this._config = config || {};
+    this._drafts = this._drafts || {};
+    this._day = this._day ?? 0;
+    this._status = {};
+    if (this._hass) this._render();
+  }
+
+  set hass(hass) {
+    this._hass = hass;
+    this._render();
+  }
+
+  getCardSize() {
+    return 8;
+  }
+
+  static getStubConfig() {
+    return {};
+  }
+
+  _entities() {
+    const hass = this._hass;
+    if (!hass) return [];
+    const configured = this._config.entities || (this._config.entity ? [this._config.entity] : null);
+    const ids = configured || Object.keys(hass.states).filter((id) =>
+      id.startsWith("climate.")
+      && hass.entities?.[id]?.platform === "grenton"
+      && "schedule_status" in hass.states[id].attributes);
+    return ids.filter((id) => hass.states[id]).sort((a, b) =>
+      this._name(a).localeCompare(this._name(b)));
+  }
+
+  _name(id) {
+    return this._hass.states[id]?.attributes.friendly_name || id;
+  }
+
+  _current() {
+    const entities = this._entities();
+    if (!entities.includes(this._selected)) this._selected = entities[0];
+    return this._selected;
+  }
+
+  _schedule(id) {
+    if (this._drafts[id]) return this._drafts[id];
+    const week = this._hass.states[id]?.attributes.weekly_schedule;
+    return week ? clone(week) : null;
+  }
+
+  _bounds(id) {
+    const a = this._hass.states[id].attributes;
+    return { min: Number(a.min_temp ?? 5), max: Number(a.max_temp ?? 35) };
+  }
+
+  _edit(id, mutate) {
+    const week = this._schedule(id);
+    if (!week) return;
+    mutate(week);
+    this._drafts[id] = week;
+    this._status[id] = null;
+    this._render();
+  }
+
+  _validate(id, week) {
+    const t = text(this._hass);
+    const { min, max } = this._bounds(id);
+    for (const day of DAYS) {
+      const periods = week[day] || [];
+      if (!periods.length || periods[0].time !== "00:00") return t.firstMidnight;
+      let previous = "";
+      for (const period of periods) {
+        if (!/^([01]\d|2[0-3]):(00|15|30|45)$/.test(period.time) || period.time <= previous) return t.order;
+        const temp = Number(period.temperature);
+        if (!(temp >= min && temp <= max) || Math.round(temp * 2) !== temp * 2) return t.range(min, max);
+        previous = period.time;
+      }
+    }
+    return null;
+  }
+
+  async _save(id) {
+    const week = this._drafts[id];
+    if (!week) return;
+    const sorted = {};
+    for (const day of DAYS) {
+      sorted[day] = [...week[day]].sort((a, b) => a.time.localeCompare(b.time))
+        .map((p) => ({ time: p.time, temperature: Number(p.temperature) }));
+    }
+    const error = this._validate(id, sorted);
+    if (error) {
+      this._status[id] = { error };
+      this._render();
+      return;
+    }
+    this._status[id] = { saving: true };
+    this._render();
+    try {
+      await this._hass.callService("grenton", "set_thermostat_schedule", { schedule: sorted }, { entity_id: id });
+      delete this._drafts[id];
+      this._status[id] = { saved: true };
+    } catch (err) {
+      this._status[id] = { error: err?.message || String(err) };
+    }
+    this._render();
+  }
+
+  _render() {
+    if (!this._hass || !this._config) return;
+    const t = text(this._hass);
+    if (!this.shadowRoot) this.attachShadow({ mode: "open" });
+    const root = this.shadowRoot;
+    root.innerHTML = `<style>${STYLE}</style>`;
+    const card = document.createElement("ha-card");
+    root.appendChild(card);
+    const title = document.createElement("h2");
+    title.textContent = this._config.title || t.title;
+    card.appendChild(title);
+
+    const entities = this._entities();
+    if (!entities.length) {
+      card.appendChild(Object.assign(document.createElement("div"), { className: "muted", textContent: t.none }));
+      return;
+    }
+    const id = this._current();
+
+    if (entities.length > 1) {
+      const tabs = document.createElement("div");
+      tabs.className = "tabs";
+      for (const entity of entities) {
+        const tab = document.createElement("button");
+        tab.className = `tab${entity === id ? " active" : ""}${this._drafts[entity] ? " dirty" : ""}`;
+        tab.textContent = this._name(entity);
+        tab.onclick = () => { this._selected = entity; this._render(); };
+        tabs.appendChild(tab);
+      }
+      card.appendChild(tabs);
+    }
+
+    const state = this._hass.states[id];
+    if (state.state !== "auto" && state.state !== "off") {
+      const warn = document.createElement("div");
+      warn.className = "warn";
+      warn.appendChild(Object.assign(document.createElement("span"), { textContent: t.notAuto }));
+      const auto = Object.assign(document.createElement("button"), { className: "btn", textContent: t.setAuto });
+      auto.onclick = () => this._hass.callService("climate", "set_hvac_mode", { entity_id: id, hvac_mode: "auto" });
+      warn.appendChild(auto);
+      card.appendChild(warn);
+    }
+
+    const week = this._schedule(id);
+    if (!week) {
+      card.appendChild(Object.assign(document.createElement("div"), {
+        className: "muted",
+        textContent: `${t.noSchedule} ${state.attributes.schedule_status || ""}`,
+      }));
+      return;
+    }
+    const { min, max } = this._bounds(id);
+
+    const days = document.createElement("div");
+    days.className = "tabs";
+    t.days.forEach((label, index) => {
+      const button = document.createElement("button");
+      button.className = `tab${index === this._day ? " active" : ""}`;
+      button.textContent = label;
+      button.onclick = () => { this._day = index; this._render(); };
+      days.appendChild(button);
+    });
+    card.appendChild(days);
+
+    const day = DAYS[this._day];
+    const periods = week[day];
+    card.appendChild(this._bar(periods, min, max));
+
+    const head = document.createElement("div");
+    head.className = "row head";
+    head.innerHTML = `<span>${t.start}</span><span>${t.temperature} (°C)</span><span></span>`;
+    card.appendChild(head);
+
+    periods.forEach((period, index) => {
+      const row = document.createElement("div");
+      row.className = "row";
+      const time = document.createElement("div");
+      time.className = "time";
+      const [hour, minute] = period.time.split(":");
+      const hours = document.createElement("select");
+      const minutes = document.createElement("select");
+      for (let h = 0; h < 24; h += 1) hours.add(new Option(String(h).padStart(2, "0")));
+      for (const m of ["00", "15", "30", "45"]) minutes.add(new Option(m));
+      hours.value = hour; minutes.value = minute;
+      const disabled = index === 0;
+      hours.disabled = minutes.disabled = disabled;
+      const change = () => this._edit(id, (w) => { w[day][index].time = `${hours.value}:${minutes.value}`; });
+      hours.onchange = change; minutes.onchange = change;
+      time.append(hours, document.createTextNode(":"), minutes);
+
+      const temp = document.createElement("input");
+      Object.assign(temp, { type: "number", step: "0.5", min: String(min), max: String(max), value: String(period.temperature) });
+      temp.onchange = () => this._edit(id, (w) => { w[day][index].temperature = Number(temp.value); });
+
+      const remove = Object.assign(document.createElement("button"), { className: "icon", textContent: "×", title: t.remove });
+      remove.disabled = index === 0;
+      remove.onclick = () => this._edit(id, (w) => { w[day].splice(index, 1); });
+      row.append(time, temp, remove);
+      card.appendChild(row);
+    });
+
+    const actions = document.createElement("div");
+    actions.className = "actions";
+    const add = Object.assign(document.createElement("button"), { className: "btn", textContent: `+ ${t.add}` });
+    const last = periods[periods.length - 1];
+    const [lh, lm] = last.time.split(":").map(Number);
+    const next = lh * 60 + lm + 60 <= 23 * 60 + 45 ? lh * 60 + lm + 60 : lh * 60 + lm + 15;
+    add.disabled = last.time === "23:45";
+    add.onclick = () => this._edit(id, (w) => {
+      const minutesTotal = Math.min(next, 23 * 60 + 45);
+      w[day].push({
+        time: `${String(Math.floor(minutesTotal / 60)).padStart(2, "0")}:${String(minutesTotal % 60).padStart(2, "0")}`,
+        temperature: last.temperature,
+      });
+    });
+    actions.appendChild(add);
+    actions.appendChild(Object.assign(document.createElement("span"), { className: "muted", textContent: `${t.copy}:` }));
+    for (const [label, targets] of [[t.weekdays, DAYS.slice(0, 5)], [t.weekend, DAYS.slice(5)], [t.week, DAYS]]) {
+      const copy = Object.assign(document.createElement("button"), { className: "btn", textContent: label });
+      copy.onclick = () => this._edit(id, (w) => { for (const target of targets) w[target] = clone(w[day]); });
+      actions.appendChild(copy);
+    }
+    card.appendChild(actions);
+
+    const footer = document.createElement("div");
+    footer.className = "actions";
+    const status = this._status[id] || {};
+    const dirty = Boolean(this._drafts[id]);
+    const save = Object.assign(document.createElement("button"), {
+      className: "btn primary", textContent: status.saving ? t.saving : t.save,
+    });
+    save.disabled = !dirty || status.saving;
+    save.onclick = () => this._save(id);
+    const discard = Object.assign(document.createElement("button"), { className: "btn", textContent: t.discard });
+    discard.disabled = !dirty || status.saving;
+    discard.onclick = () => { delete this._drafts[id]; this._status[id] = null; this._render(); };
+    footer.append(save, discard);
+    if (dirty && !status.saving) footer.appendChild(Object.assign(document.createElement("span"), { className: "muted", textContent: t.unsaved }));
+    if (status.saved) footer.appendChild(Object.assign(document.createElement("span"), { className: "muted", textContent: `✓ ${t.saved}` }));
+    card.appendChild(footer);
+    if (status.error) card.appendChild(Object.assign(document.createElement("div"), { className: "error", textContent: status.error }));
+  }
+
+  _bar(periods, min, max) {
+    const bar = document.createElement("div");
+    bar.className = "bar";
+    const sorted = [...periods].sort((a, b) => a.time.localeCompare(b.time));
+    sorted.forEach((period, index) => {
+      const start = this._minutes(period.time);
+      const end = index + 1 < sorted.length ? this._minutes(sorted[index + 1].time) : 1440;
+      const ratio = max > min ? (Number(period.temperature) - min) / (max - min) : 0.5;
+      const segment = document.createElement("div");
+      segment.style.flex = String(Math.max(end - start, 0));
+      segment.style.background = `hsl(${Math.round(220 - 200 * Math.min(Math.max(ratio, 0), 1))}, 70%, 50%)`;
+      segment.title = `${period.time} ${period.temperature} °C`;
+      bar.appendChild(segment);
+    });
+    return bar;
+  }
+
+  _minutes(time) {
+    const [h, m] = time.split(":").map(Number);
+    return h * 60 + m;
+  }
+}
+
+if (!customElements.get("grenton-schedule-card")) {
+  customElements.define("grenton-schedule-card", GrentonScheduleCard);
+  window.customCards = window.customCards || [];
+  window.customCards.push({
+    type: "grenton-schedule-card",
+    name: "Grenton – thermostat schedule",
+    description: "Edit the weekly schedule of Grenton thermostats.",
+    preview: false,
+  });
+}
+
+}
