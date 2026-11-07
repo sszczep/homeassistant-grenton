@@ -45,6 +45,7 @@ async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: Grenton
     clus: list[dict[str, Any]] = []
     devices: list[dict[str, Any]] = []
     gate: dict[str, Any] | None = None
+    thermostats: list[dict[str, Any]] = []
     if runtime is not None:
         coordinator = runtime.coordinator
         for clu in coordinator.clus:
@@ -68,6 +69,28 @@ async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: Grenton
                     for e in device.entities
                 ],
             })
+        thermostats = []
+        for device in runtime.devices:
+            for entity in device.entities:
+                if not hasattr(entity, "schedule_status") or not hasattr(entity, "_value"):
+                    continue
+                raw = entity._value("scheduleData")
+                thermostats.append({
+                    "unique_id": entity.unique_id,
+                    "label": entity.label,
+                    "widget_type": device.type,
+                    "state": entity._value("state"),
+                    "mode": entity._value("mode"),
+                    "min_temperature": entity._value("minTemperature"),
+                    "max_temperature": entity._value("maxTemperature"),
+                    "schedule_status": entity.schedule_status,
+                    "schedule_raw": raw if not isinstance(raw, str) else raw[:4000],
+                    "schedule_raw_length": len(raw) if isinstance(raw, str) else None,
+                    "bindings": {
+                        name: state.source_attributes for name, state in entity.states.items()
+                    },
+                    "actions": sorted(entity.actions),
+                })
         if runtime.gate_coordinator is not None:
             gate_coordinator = runtime.gate_coordinator
             gate = {
@@ -86,4 +109,5 @@ async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: Grenton
         "clus": clus,
         "gate": gate,
         "devices": devices,
+        "thermostats": thermostats if runtime is not None else [],
     }
